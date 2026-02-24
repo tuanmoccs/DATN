@@ -17,8 +17,6 @@ onMounted(() => {
     const user = JSON.parse(userInfo)
     if (user.role === 'teacher') {
       router.push('/teacher/dashboard')
-    } else {
-      router.push('/student/dashboard')
     }
   }
 });

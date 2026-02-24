@@ -103,6 +103,21 @@ class User extends Authenticatable
         return $this->hasMany(PresentationVersion::class, 'uploaded_by');
     }
 
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(LessonProgress::class, 'student_id');
+    }
+
+    public function competencyReports(): HasMany
+    {
+        return $this->hasMany(AiCompetencyReport::class, 'student_id');
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
+
     // Scopes
     public function scopeActive($query)
     {

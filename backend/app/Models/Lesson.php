@@ -53,6 +53,11 @@ class Lesson extends Model
     return $this->hasMany(Quiz::class, 'lesson_id');
   }
 
+  public function progress(): HasMany
+  {
+    return $this->hasMany(LessonProgress::class, 'lesson_id');
+  }
+
   // Scopes
   public function scopePublished($query)
   {

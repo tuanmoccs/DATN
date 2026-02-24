@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Mail\OtpMail;
-use App\Models\Otp;
-use App\Models\User;
+use App\Repositories\Contracts\OtpRepositoryInterface;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -15,10 +15,15 @@ class AuthService
   private const CACHE_TTL = 300; // 10 minutes
   private const CACHE_PREFIX = 'teacher_registration_';
 
+  public function __construct(
+    private readonly UserRepositoryInterface $userRepository,
+    private readonly OtpRepositoryInterface $otpRepository
+  ) {}
+
   public function sendTeacherRegistrationOtp(array $data): array
   {
     try {
-      $otpCode = Otp::generate($data['email'], 'registration');
+      $otpCode = $this->otpRepository->generate($data['email'], 'registration');
 
       Mail::to($data['email'])->send(new OtpMail($otpCode, $data['name']));
 
@@ -52,7 +57,7 @@ class AuthService
 
   public function verifyTeacherRegistrationOtp(array $data): array
   {
-    if (!Otp::verify($data['email'], $data['otp'], 'registration')) {
+    if (!$this->otpRepository->verify($data['email'], $data['otp'], 'registration')) {
       return [
         'data' => [
           'success' => false,
@@ -75,7 +80,7 @@ class AuthService
     }
 
     try {
-      $user = User::create([
+      $user = $this->userRepository->createUser([
         'name' => $userData['name'],
         'email' => $userData['email'],
         'password' => $userData['password'],
@@ -113,7 +118,7 @@ class AuthService
   public function registerStudent(array $data): array
   {
     try {
-      $user = User::create([
+      $user = $this->userRepository->createUser([
         'name' => $data['name'],
         'email' => $data['email'],
         'password' => Hash::make($data['password']),
@@ -147,9 +152,10 @@ class AuthService
 
   public function login(array $credentials): array
   {
-    $user = User::where('email', $credentials['email'])
-      ->where('role', $credentials['role'])
-      ->first();
+    $user = $this->userRepository->findByEmailAndRole(
+      $credentials['email'],
+      $credentials['role']
+    );
 
     if (!$user || !Hash::check($credentials['password'], $user->password)) {
       return [

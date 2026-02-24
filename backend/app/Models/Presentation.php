@@ -35,9 +35,19 @@ class Presentation extends Model
     return $this->hasMany(PresentationVersion::class, 'presentation_id');
   }
 
+  public function slides(): HasMany
+  {
+    return $this->hasMany(PresentationSlide::class, 'presentation_id')->orderBy('order');
+  }
+
   public function activeVersion()
   {
     return $this->versions()->where('is_active', true)->first();
+  }
+
+  public function getSlidesCount(): int
+  {
+    return $this->slides()->count();
   }
 
   // Scopes

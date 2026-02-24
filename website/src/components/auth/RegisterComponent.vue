@@ -168,9 +168,9 @@
       <div class="mt-6 text-center">
         <p class="text-sm text-gray-600">
           Đã có tài khoản?
-          <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">
+          <router-link to="/login" class="text-blue-600 hover:text-blue-700 font-medium">
             Đăng nhập ngay
-          </a>
+          </router-link>
         </p>
       </div>
     </div>

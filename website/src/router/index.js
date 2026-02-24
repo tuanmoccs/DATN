@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Login from '@/pages/auth/LoginPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,7 +6,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'Login',
-      component: Login,
+      component: () => import('@/pages/auth/LoginPage.vue'),
       meta: { guest: true }
     },
     {
@@ -26,7 +25,6 @@ const router = createRouter({
           name: 'TeacherDashboard',
           component: () => import('@/pages/teacher/DashboardPage.vue'),
         },
-        // Thêm các route khác cho teacher
       ]
     },
     {
@@ -34,15 +32,9 @@ const router = createRouter({
       redirect: '/login'
     },
   ]
-  
 })
-console.log('Login component:', Login)
 
 router.beforeEach((to, from, next) => {
-
-  console.log('➡️ to:', to.fullPath)
-  console.log('➡️ matched:', to.matched)
-  next()
   const token = localStorage.getItem('access_token')
   const userInfo = localStorage.getItem('user_info')
   const user = userInfo ? JSON.parse(userInfo) : null
@@ -50,27 +42,19 @@ router.beforeEach((to, from, next) => {
   // Kiểm tra route yêu cầu authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!token || !user) {
-      // Chưa đăng nhập, redirect về login
       next({ name: 'Login' })
     } else {
-      // Kiểm tra role
       const requiredRole = to.matched.find(record => record.meta.role)?.meta.role
       if (requiredRole && user.role !== requiredRole) {
-        // Sai role, redirect về dashboard tương ứng
-        if (user.role === 'teacher') {
-          next({ name: 'TeacherDashboard' })
-        }
+        next({ name: 'Login' })
       } else {
         next()
       }
     }
   } else if (to.matched.some(record => record.meta.guest)) {
-    // Route cho guest (login, register)
-    if (token && user) {
-      // Đã đăng nhập, redirect về dashboard
-      if (user.role === 'teacher') {
-        next({ name: 'TeacherDashboard' })
-      }
+    // Nếu đã đăng nhập là teacher thì chuyển về dashboard
+    if (token && user && user.role === 'teacher') {
+      next({ name: 'TeacherDashboard' })
     } else {
       next()
     }
