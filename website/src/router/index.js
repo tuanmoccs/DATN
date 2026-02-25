@@ -25,6 +25,17 @@ const router = createRouter({
           name: 'TeacherDashboard',
           component: () => import('@/pages/teacher/DashboardPage.vue'),
         },
+        {
+          path: 'classes',
+          name: 'TeacherClasses',
+          component: () => import('@/pages/teacher/ClassesPage.vue'),
+        },
+        {
+          path: 'classes/:id',
+          name: 'TeacherClassDetail',
+          component: () => import('@/pages/teacher/ClassDetailPage.vue'),
+          props: true,
+        },
       ]
     },
     {
