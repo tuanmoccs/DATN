@@ -17,7 +17,7 @@
           </label>
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="text-gray-400">✉</i>
+              <i class="fa-regular fa-envelope"></i>
             </div>
             <input id="email" v-model="formData.email" type="email" required
               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
@@ -35,14 +35,14 @@
           </label>
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="text-gray-400">🔒</i>
+              <i class="fa-solid fa-lock"></i>
             </div>
             <input id="password" v-model="formData.password" :type="showPassword ? 'text' : 'password'" required
               class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               placeholder="••••••••" :class="{ 'border-red-500': errors.password }" />
             <button type="button" @click="showPassword = !showPassword"
               class="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <i class="text-gray-400">{{ showPassword ? '👁' : '👁‍🗨' }}</i>
+              <i class="text-gray-400" :class="showPassword ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"></i>
             </button>
           </div>
           <p v-if="errors.password" class="mt-1 text-sm text-red-600">
@@ -71,7 +71,6 @@
         <button type="submit" :disabled="loading"
           class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
           <span v-if="loading" class="flex items-center justify-center">
-            <i class="animate-spin mr-2">⟳</i>
             Đang xử lý...
           </span>
           <span v-else>Đăng nhập</span>

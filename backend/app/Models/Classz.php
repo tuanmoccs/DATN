@@ -33,7 +33,7 @@ class Classz extends Model
     return $this->belongsTo(User::class, 'teacher_id');
   }
 
-  public function enrollments(): HasMany
+  public function enrollment(): HasMany
   {
     return $this->hasMany(Enrollment::class, 'class_id');
   }
@@ -69,6 +69,6 @@ class Classz extends Model
   // Methods
   public function enrollmentCount(): int
   {
-    return $this->enrollments()->where('status', 'active')->count();
+    return $this->enrollment()->where('status', 'active')->count();
   }
 }

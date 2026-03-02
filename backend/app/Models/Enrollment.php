@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Enrollment extends Model
 {
+  protected $table = 'enrollment';
   protected $fillable = ['class_id', 'user_id', 'joined_at', 'status'];
 
   protected $casts = [

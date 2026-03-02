@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ClassController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,4 +27,27 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
+
+    // ==========================================
+    // Teacher - Quản lý lớp học
+    // ==========================================
+    Route::prefix('teacher/classes')->group(function () {
+        Route::get('/', [ClassController::class, 'index']);
+        Route::post('/', [ClassController::class, 'store']);
+        Route::get('/{id}', [ClassController::class, 'show']);
+        Route::put('/{id}', [ClassController::class, 'update']);
+        Route::delete('/{id}', [ClassController::class, 'destroy']);
+
+        // Quản lý yêu cầu tham gia
+        Route::post('/enrollments/{enrollmentId}/approve', [ClassController::class, 'approveEnrollment']);
+        Route::post('/enrollments/{enrollmentId}/reject', [ClassController::class, 'rejectEnrollment']);
+        Route::delete('/enrollments/{enrollmentId}', [ClassController::class, 'removeStudent']);
+    });
+
+    // ==========================================
+    // Student - Tham gia lớp học
+    // ==========================================
+    Route::post('/student/classes/join', [ClassController::class, 'requestJoin']);
+    Route::get('/student/classes', [ClassController::class, 'studentClasses']);
+    Route::get('/student/classes/{id}', [ClassController::class, 'studentClassDetail']);
 });
