@@ -5,6 +5,11 @@ import {Text, StyleSheet} from 'react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import ClassesScreen from '../screens/main/ClassesScreen';
 import ClassDetailScreen from '../screens/main/ClassDetailScreen';
+import LessonDetailScreen from '../screens/main/LessonDetailScreen';
+import SlideViewerScreen from '../screens/main/SlideViewerScreen';
+import QuizScreen from '../screens/main/QuizScreen';
+import QuizResultScreen from '../screens/main/QuizResultScreen';
+import {SlideInfo} from '../services/lessonService';
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -14,6 +19,10 @@ export type MainTabParamList = {
 export type MainStackParamList = {
   MainTabs: undefined;
   ClassDetail: {classId: number};
+  LessonDetail: {lessonId: number};
+  SlideViewer: {lessonId: number; slides: SlideInfo[]; currentSlide: number};
+  QuizScreen: {quizId: number; lessonId: number};
+  QuizResult: {attemptId: number; lessonId: number};
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -71,6 +80,10 @@ const MainNavigator: React.FC = () => {
       }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="ClassDetail" component={ClassDetailScreen} />
+      <Stack.Screen name="LessonDetail" component={LessonDetailScreen} />
+      <Stack.Screen name="SlideViewer" component={SlideViewerScreen} />
+      <Stack.Screen name="QuizScreen" component={QuizScreen} />
+      <Stack.Screen name="QuizResult" component={QuizResultScreen} />
     </Stack.Navigator>
   );
 };

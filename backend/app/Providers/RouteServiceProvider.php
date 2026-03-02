@@ -25,7 +25,12 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // Rate limit riêng cho AI generation (tốn thời gian, ít request)
+        RateLimiter::for('ai', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
 
         $this->routes(function () {

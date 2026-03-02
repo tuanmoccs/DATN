@@ -92,13 +92,13 @@ const onAvatarError = () => {
 
 const pageTitles = {
   '/teacher/dashboard': 'Dashboard',
-  '/teacher/classes': 'Lớp học',
-  '/teacher/lessons': 'Bài học',
-  '/teacher/quizzes': 'Bài kiểm tra',
-  '/teacher/assignments': 'Bài tập',
-  '/teacher/students': 'Học sinh',
-  '/teacher/reports': 'Báo cáo',
-  '/teacher/settings': 'Cài đặt',
+  '/teacher/classes': 'Classes',
+  '/teacher/lessons': 'Lessons',
+  '/teacher/quizzes': 'Quizzes',
+  '/teacher/assignments': 'Assignments',
+  '/teacher/students': 'Students',
+  '/teacher/reports': 'Reports',
+  '/teacher/settings': 'Settings',
 }
 
 const pageTitle = computed(() => {

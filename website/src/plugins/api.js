@@ -1,6 +1,7 @@
 import { inject } from 'vue'
 import auth from '../services/auth'
 import classService from '../services/class'
+import lessonService from '../services/lesson'
 
 
 export const API_KEY = Symbol('api')
@@ -9,6 +10,7 @@ export const createApi = ($axios) => {
   return {
     auth: auth($axios),
     class: classService($axios),
+    lesson: lessonService($axios),
   }
 }
 

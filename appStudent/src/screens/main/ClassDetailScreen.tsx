@@ -10,16 +10,18 @@ import {
   RefreshControl,
 } from 'react-native';
 import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import classService, {ClassInfo} from '../../services/classService';
 import {MainStackParamList} from '../../navigation/MainNavigator';
 
 type ClassDetailRouteProp = RouteProp<MainStackParamList, 'ClassDetail'>;
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
 type TabKey = 'info' | 'lessons' | 'students';
 
 const ClassDetailScreen: React.FC = () => {
   const route = useRoute<ClassDetailRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const {classId} = route.params;
 
   const [classData, setClassData] = useState<ClassInfo | null>(null);
@@ -146,7 +148,9 @@ const ClassDetailScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}>
         {activeTab === 'info' && renderInfoTab(classData)}
-        {activeTab === 'lessons' && renderLessonsTab(classData)}
+        {activeTab === 'lessons' && renderLessonsTab(classData, (lessonId: number) => {
+          navigation.navigate('LessonDetail', {lessonId});
+        })}
         {activeTab === 'students' && renderStudentsTab(classData)}
         <View style={styles.bottomSpace} />
       </ScrollView>
@@ -235,7 +239,7 @@ const renderInfoTab = (classData: ClassInfo) => (
 );
 
 // ========== Tab: Bài học ==========
-const renderLessonsTab = (classData: ClassInfo) => {
+const renderLessonsTab = (classData: ClassInfo, onLessonPress: (lessonId: number) => void) => {
   const lessons = classData.lessons || [];
 
   if (lessons.length === 0) {
@@ -253,7 +257,11 @@ const renderLessonsTab = (classData: ClassInfo) => {
   return (
     <View style={styles.tabContent}>
       {lessons.map((lesson, index) => (
-        <TouchableOpacity key={lesson.id} style={styles.lessonCard} activeOpacity={0.7}>
+        <TouchableOpacity
+          key={lesson.id}
+          style={styles.lessonCard}
+          activeOpacity={0.7}
+          onPress={() => onLessonPress(lesson.id)}>
           <View style={styles.lessonNumber}>
             <Text style={styles.lessonNumberText}>{index + 1}</Text>
           </View>
