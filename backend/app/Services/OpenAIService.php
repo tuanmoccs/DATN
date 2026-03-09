@@ -479,4 +479,181 @@ Return a JSON array with this exact structure:
 ]
 PROMPT;
   }
+
+  /**
+   * AI chấm điểm bài tập tự luận
+   * Đọc nội dung bài tập + đáp án học sinh → gợi ý điểm + nhận xét
+   */
+  public function gradeAssignmentSubmission(
+    string $assignmentTitle,
+    string $assignmentDescription,
+    string $assignmentInstructions,
+    int $maxScore,
+    string $studentAnswer
+  ): array {
+    try {
+      $prompt = $this->buildGradingPrompt(
+        $assignmentTitle,
+        $assignmentDescription,
+        $assignmentInstructions,
+        $maxScore,
+        $studentAnswer
+      );
+
+      $result = $this->chatWithRetry([
+        'model' => config('openai.model', 'gpt-4o-mini'),
+        'messages' => [
+          [
+            'role' => 'system',
+            'content' => 'You are an experienced and fair teacher who grades student assignments. You provide constructive, detailed feedback. Respond ONLY with valid JSON, no markdown formatting. Always respond in the same language as the assignment content. If the assignment is in Vietnamese, respond in Vietnamese.',
+          ],
+          [
+            'role' => 'user',
+            'content' => $prompt,
+          ],
+        ],
+        'max_tokens' => config('openai.max_tokens', 4096),
+        'temperature' => 0.3, // Lower temperature for more consistent grading
+      ]);
+
+      // Clean up potential markdown code block wrapping
+      $result = preg_replace('/^```(?:json)?\s*/', '', $result);
+      $result = preg_replace('/\s*```$/', '', $result);
+
+      $grading = json_decode($result, true);
+
+      if (json_last_error() !== JSON_ERROR_NONE) {
+        Log::error('OpenAI grading JSON parse error', [
+          'error' => json_last_error_msg(),
+          'raw_response' => $result,
+        ]);
+        throw new \Exception('Không thể parse kết quả chấm điểm từ AI: ' . json_last_error_msg());
+      }
+
+      // Validate score is within range
+      $suggestedScore = min($maxScore, max(0, $grading['suggested_score'] ?? 0));
+
+      return [
+        'suggested_score' => $suggestedScore,
+        'max_score' => $maxScore,
+        'percentage' => $maxScore > 0 ? round(($suggestedScore / $maxScore) * 100, 2) : 0,
+        'feedback' => $grading['feedback'] ?? '',
+        'strengths' => $grading['strengths'] ?? [],
+        'weaknesses' => $grading['weaknesses'] ?? [],
+        'suggestions' => $grading['suggestions'] ?? [],
+        'grade_letter' => $grading['grade_letter'] ?? '',
+      ];
+    } catch (\Exception $e) {
+      Log::error('OpenAI grading failed', [
+        'error' => $e->getMessage(),
+        'assignment' => $assignmentTitle,
+      ]);
+      throw $e;
+    }
+  }
+
+  /**
+   * Trích xuất text từ file hình ảnh sử dụng GPT-4 Vision
+   */
+  public function extractTextFromImage(string $filePath): string
+  {
+    $fullPath = storage_path('app/' . $filePath);
+
+    if (!file_exists($fullPath)) {
+      throw new \Exception('File không tồn tại: ' . $filePath);
+    }
+
+    $imageData = base64_encode(file_get_contents($fullPath));
+    $mimeType = mime_content_type($fullPath);
+
+    try {
+      $response = $this->client->chat()->create([
+        'model' => 'gpt-4o-mini',
+        'messages' => [
+          [
+            'role' => 'user',
+            'content' => [
+              [
+                'type' => 'text',
+                'text' => 'Please extract all text content from this image. Return only the text content, preserving the original formatting and language as much as possible. If there are handwritten assignments, transcribe them accurately.',
+              ],
+              [
+                'type' => 'image_url',
+                'image_url' => [
+                  'url' => "data:{$mimeType};base64,{$imageData}",
+                ],
+              ],
+            ],
+          ],
+        ],
+        'max_tokens' => 4096,
+      ]);
+
+      return $response->choices[0]->message->content;
+    } catch (\Exception $e) {
+      Log::error('Image text extraction failed', [
+        'error' => $e->getMessage(),
+        'file' => $filePath,
+      ]);
+      throw new \Exception('Không thể đọc nội dung từ hình ảnh: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Build prompt for AI grading
+   */
+  private function buildGradingPrompt(
+    string $title,
+    string $description,
+    string $instructions,
+    int $maxScore,
+    string $studentAnswer
+  ): string {
+    return <<<PROMPT
+You are grading a student's assignment submission. Please evaluate it carefully and provide a fair score with detailed feedback.
+
+========================
+ASSIGNMENT INFORMATION
+========================
+Title: {$title}
+Description: {$description}
+Instructions: {$instructions}
+Maximum Score: {$maxScore}
+
+========================
+STUDENT'S ANSWER
+========================
+{$studentAnswer}
+
+========================
+GRADING CRITERIA
+========================
+1. Understanding of the topic (25%)
+2. Completeness of the answer (25%)
+3. Accuracy of information (25%)
+4. Clarity and organization (15%)
+5. Creativity and critical thinking (10%)
+
+========================
+RETURN FORMAT (STRICT JSON ONLY)
+========================
+Return ONLY a valid JSON object with this exact structure:
+
+{
+  "suggested_score": <number between 0 and {$maxScore}>,
+  "feedback": "Detailed overall feedback about the submission",
+  "strengths": ["Strength 1", "Strength 2"],
+  "weaknesses": ["Weakness 1", "Weakness 2"],
+  "suggestions": ["Improvement suggestion 1", "Improvement suggestion 2"],
+  "grade_letter": "A/B/C/D/F"
+}
+
+IMPORTANT:
+- Be fair and constructive
+- The score must be between 0 and {$maxScore}
+- Provide specific, actionable feedback
+- Respond in the same language as the assignment content
+- Return ONLY JSON, no markdown or explanations
+PROMPT;
+  }
 }

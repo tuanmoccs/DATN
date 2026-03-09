@@ -17,7 +17,7 @@ import {MainStackParamList} from '../../navigation/MainNavigator';
 type ClassDetailRouteProp = RouteProp<MainStackParamList, 'ClassDetail'>;
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
-type TabKey = 'info' | 'lessons' | 'students';
+type TabKey = 'info' | 'lessons' | 'assignments' | 'students';
 
 const ClassDetailScreen: React.FC = () => {
   const route = useRoute<ClassDetailRouteProp>();
@@ -55,6 +55,7 @@ const ClassDetailScreen: React.FC = () => {
   const tabs: {key: TabKey; label: string; count?: number}[] = [
     {key: 'info', label: 'Thông tin'},
     {key: 'lessons', label: 'Bài học', count: classData?.lessons?.length || 0},
+    {key: 'assignments', label: 'Bài tập'},
     {
       key: 'students',
       label: 'Thành viên',
@@ -151,6 +152,7 @@ const ClassDetailScreen: React.FC = () => {
         {activeTab === 'lessons' && renderLessonsTab(classData, (lessonId: number) => {
           navigation.navigate('LessonDetail', {lessonId});
         })}
+        {activeTab === 'assignments' && renderAssignmentsTab(classData, navigation)}
         {activeTab === 'students' && renderStudentsTab(classData)}
         <View style={styles.bottomSpace} />
       </ScrollView>
@@ -278,6 +280,34 @@ const renderLessonsTab = (classData: ClassInfo, onLessonPress: (lessonId: number
           <Text style={styles.lessonArrow}>›</Text>
         </TouchableOpacity>
       ))}
+    </View>
+  );
+};
+
+// ========== Tab: Bài tập ==========
+const renderAssignmentsTab = (classData: ClassInfo, navigation: any) => {
+  return (
+    <View style={styles.tabContent}>
+      <TouchableOpacity
+        style={styles.assignmentNavCard}
+        activeOpacity={0.7}
+        onPress={() =>
+          navigation.navigate('AssignmentList', {
+            classId: classData.id,
+            className: classData.name,
+          })
+        }>
+        <View style={styles.assignmentNavIcon}>
+          <Text style={styles.assignmentNavIconText}>📋</Text>
+        </View>
+        <View style={styles.assignmentNavContent}>
+          <Text style={styles.assignmentNavTitle}>Xem bài tập</Text>
+          <Text style={styles.assignmentNavSubtitle}>
+            Xem danh sách bài tập, nộp bài và xem kết quả chấm điểm
+          </Text>
+        </View>
+        <Text style={styles.assignmentNavArrow}>›</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -599,6 +629,51 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   lessonArrow: {
+    fontSize: 22,
+    color: '#9CA3AF',
+    fontWeight: '300',
+    marginLeft: 8,
+  },
+  // Assignments
+  assignmentNavCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  assignmentNavIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  assignmentNavIconText: {
+    fontSize: 24,
+  },
+  assignmentNavContent: {
+    flex: 1,
+  },
+  assignmentNavTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  assignmentNavSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  assignmentNavArrow: {
     fontSize: 22,
     color: '#9CA3AF',
     fontWeight: '300',

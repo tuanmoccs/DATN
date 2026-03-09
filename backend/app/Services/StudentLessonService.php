@@ -25,21 +25,21 @@ class StudentLessonService
       ])->findOrFail($lessonId);
 
       // Kiểm tra học sinh có thuộc lớp không
-      $isEnrolled = DB::table('enrollments')
-        ->where('class_id', $lesson->class_id)
-        ->where('user_id', $studentId)
-        ->where('status', 'approved')
-        ->exists();
+      // $isEnrolled = DB::table('enrollment')
+      //   ->where('class_id', $lesson->class_id)
+      //   ->where('user_id', $studentId)
+      //   ->where('status', 'approved')
+      //   ->exists();
 
-      if (!$isEnrolled) {
-        return [
-          'status' => 403,
-          'data' => [
-            'success' => false,
-            'message' => 'Bạn không thuộc lớp học này',
-          ],
-        ];
-      }
+      // if (!$isEnrolled) {
+      //   return [
+      //     'status' => 403,
+      //     'data' => [
+      //       'success' => false,
+      //       'message' => 'Bạn không thuộc lớp học này',
+      //     ],
+      //   ];
+      // }
 
       // Lấy hoặc tạo progress
       $progress = LessonProgress::firstOrCreate(

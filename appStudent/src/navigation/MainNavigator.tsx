@@ -9,6 +9,9 @@ import LessonDetailScreen from '../screens/main/LessonDetailScreen';
 import SlideViewerScreen from '../screens/main/SlideViewerScreen';
 import QuizScreen from '../screens/main/QuizScreen';
 import QuizResultScreen from '../screens/main/QuizResultScreen';
+import AssignmentListScreen from '../screens/main/AssignmentListScreen';
+import AssignmentDetailScreen from '../screens/main/AssignmentDetailScreen';
+import AssignmentSubmitScreen from '../screens/main/AssignmentSubmitScreen';
 import {SlideInfo} from '../services/lessonService';
 
 export type MainTabParamList = {
@@ -23,6 +26,14 @@ export type MainStackParamList = {
   SlideViewer: {lessonId: number; slides: SlideInfo[]; currentSlide: number};
   QuizScreen: {quizId: number; lessonId: number};
   QuizResult: {attemptId: number; lessonId: number};
+  AssignmentList: {classId: number; className: string};
+  AssignmentDetail: {assignmentId: number; classId: number};
+  AssignmentSubmit: {
+    assignmentId: number;
+    assignmentTitle: string;
+    submissionType: string;
+    maxScore: number;
+  };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -84,6 +95,9 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen name="SlideViewer" component={SlideViewerScreen} />
       <Stack.Screen name="QuizScreen" component={QuizScreen} />
       <Stack.Screen name="QuizResult" component={QuizResultScreen} />
+      <Stack.Screen name="AssignmentList" component={AssignmentListScreen} />
+      <Stack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />
+      <Stack.Screen name="AssignmentSubmit" component={AssignmentSubmitScreen} />
     </Stack.Navigator>
   );
 };

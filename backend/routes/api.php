@@ -5,6 +5,7 @@ use App\Http\Controllers\ClassController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\StudentLessonController;
+use App\Http\Controllers\AssignmentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -99,5 +100,30 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/{quizId}/questions', [QuizController::class, 'addQuestion']);
         Route::put('/{quizId}/questions/{questionId}', [QuizController::class, 'updateQuestion']);
         Route::delete('/{quizId}/questions/{questionId}', [QuizController::class, 'deleteQuestion']);
+    });
+
+    // ==========================================
+    // Teacher - Quản lý bài tập (Assignment)
+    // ==========================================
+    Route::prefix('teacher/assignments')->group(function () {
+        Route::get('/class/{classId}', [AssignmentController::class, 'index']);
+        Route::post('/', [AssignmentController::class, 'store']);
+        Route::get('/{id}', [AssignmentController::class, 'show']);
+        Route::post('/{id}', [AssignmentController::class, 'update']); // POST vì có file upload
+        Route::delete('/{id}', [AssignmentController::class, 'destroy']);
+
+        // Quản lý bài nộp & chấm điểm
+        Route::get('/{assignmentId}/submissions', [AssignmentController::class, 'getSubmissions']);
+        Route::get('/submissions/{submissionId}', [AssignmentController::class, 'getSubmissionDetail']);
+        Route::post('/submissions/{submissionId}/ai-grade', [AssignmentController::class, 'requestAIGrading']);
+        Route::post('/submissions/{submissionId}/grade', [AssignmentController::class, 'finalizeGrading']);
+    });
+
+    // ==========================================
+    // Student - Bài tập
+    // ==========================================
+    Route::prefix('student/assignments')->group(function () {
+        Route::get('/class/{classId}', [AssignmentController::class, 'studentAssignments']);
+        Route::post('/{assignmentId}/submit', [AssignmentController::class, 'submitAssignment']);
     });
 });
