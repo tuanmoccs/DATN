@@ -39,9 +39,9 @@
       <button @click="handleLogout" :class="[
         'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-red-600 hover:bg-red-50 transition-colors',
         collapsed ? 'justify-center' : '',
-      ]" :title="collapsed ? 'Đăng xuất' : ''">
+      ]" :title="collapsed ? 'Logout' : ''">
         <i class="fas fa-sign-out-alt text-lg flex-shrink-0"></i>
-        <span v-if="!collapsed">Đăng xuất</span>
+        <span v-if="!collapsed">Logout</span>
       </button>
     </div>
   </aside>
@@ -67,13 +67,13 @@ const api = useApi()
 
 const menuItems = [
   { icon: 'fas fa-chart-line', label: 'Dashboard', path: '/teacher/dashboard' },
-  { icon: 'fas fa-book', label: 'Lớp học', path: '/teacher/classes' },
-  { icon: 'fas fa-file-alt', label: 'Bài học', path: '/teacher/lessons' },
-  { icon: 'fas fa-question-circle', label: 'Bài kiểm tra', path: '/teacher/quizzes' },
-  { icon: 'fas fa-tasks', label: 'Bài tập', path: '/teacher/assignments' },
-  { icon: 'fas fa-user-graduate', label: 'Học sinh', path: '/teacher/students' },
-  { icon: 'fas fa-chart-bar', label: 'Báo cáo', path: '/teacher/reports' },
-  { icon: 'fas fa-cog', label: 'Cài đặt', path: '/teacher/settings' },
+  { icon: 'fas fa-book', label: 'Classes', path: '/teacher/classes' },
+  { icon: 'fas fa-file-alt', label: 'Lessons', path: '/teacher/lessons' },
+  { icon: 'fas fa-question-circle', label: 'Quizzes', path: '/teacher/quizzes' },
+  { icon: 'fas fa-tasks', label: 'Assignments', path: '/teacher/assignments' },
+  { icon: 'fas fa-user-graduate', label: 'Students', path: '/teacher/students' },
+  { icon: 'fas fa-chart-bar', label: 'Reports', path: '/teacher/reports' },
+  { icon: 'fas fa-cog', label: 'Settings', path: '/teacher/settings' },
 ]
 
 const isActive = (path) => {
@@ -84,7 +84,7 @@ const handleLogout = async () => {
   try {
     await api.auth.logout()
   } catch {
-    // Bỏ qua lỗi
+    // Ignore errors
   } finally {
     localStorage.removeItem('access_token')
     localStorage.removeItem('user_info')

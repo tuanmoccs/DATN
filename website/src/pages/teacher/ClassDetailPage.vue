@@ -10,13 +10,13 @@
       <div class="mb-6">
         <button @click="$router.push({ name: 'TeacherClasses' })"
           class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors mb-4">
-          <i class="fas fa-arrow-left"></i> Quay lại danh sách
+          <i class="fas fa-arrow-left"></i> Return to Classes
         </button>
 
         <div class="flex items-start justify-between">
           <div>
             <h2 class="text-2xl font-bold text-gray-800">{{ classData.name }}</h2>
-            <p class="text-gray-500 mt-1">{{ classData.semester || 'Chưa xác định học kỳ' }}</p>
+            <p class="text-gray-500 mt-1">{{ classData.semester || 'Semester not specified' }}</p>
           </div>
           <span :class="statusClass(classData.status)" class="px-3 py-1.5 rounded-full text-xs font-medium">
             {{ statusLabel(classData.status) }}
@@ -30,7 +30,7 @@
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-xs text-blue-600 font-medium mb-1">Mã lớp học</p>
+              <p class="text-xs text-blue-600 font-medium mb-1">Class Code</p>
               <code class="text-2xl font-mono font-bold text-blue-800 tracking-wider">{{ classData.code }}</code>
             </div>
             <button @click="copyCode(classData.code)"
@@ -42,7 +42,7 @@
 
         <!-- Student Count -->
         <div class="bg-green-50 border border-green-200 rounded-xl p-4">
-          <p class="text-xs text-green-600 font-medium mb-1">Học sinh</p>
+          <p class="text-xs text-green-600 font-medium mb-1">Students</p>
           <p class="text-2xl font-bold text-green-800">{{ classData.student_count || 0 }}
             <span v-if="classData.max_students" class="text-sm font-normal text-green-600">/ {{
               classData.max_students }}</span>
@@ -51,14 +51,14 @@
 
         <!-- Pending -->
         <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
-          <p class="text-xs text-orange-600 font-medium mb-1">Chờ duyệt</p>
+          <p class="text-xs text-orange-600 font-medium mb-1">Pending</p>
           <p class="text-2xl font-bold text-orange-800">{{ classData.pending_count || 0 }}</p>
         </div>
 
         <!-- Description -->
         <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-          <p class="text-xs text-gray-500 font-medium mb-1">Mô tả</p>
-          <p class="text-sm text-gray-700 line-clamp-3">{{ classData.description || 'Không có mô tả' }}</p>
+          <p class="text-xs text-gray-500 font-medium mb-1">Description</p>
+          <p class="text-sm text-gray-700 line-clamp-3">{{ classData.description || 'No description available' }}</p>
         </div>
       </div>
 
@@ -84,19 +84,19 @@
       <div v-if="activeTab === 'pending'">
         <div v-if="pendingEnrollments.length === 0" class="text-center py-12">
           <i class="fas fa-check-circle text-4xl text-green-300 mb-3"></i>
-          <p class="text-gray-500">Không có yêu cầu nào đang chờ duyệt</p>
+          <p class="text-gray-500">No pending requests</p>
         </div>
 
         <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table class="w-full">
             <thead class="bg-gray-50">
               <tr>
-                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Học sinh
+                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Student
                 </th>
                 <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ngày gửi
+                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Sent
                 </th>
-                <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hành động
+                <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions
                 </th>
               </tr>
             </thead>
@@ -117,11 +117,11 @@
                   <div class="flex items-center justify-end gap-2">
                     <button @click="handleApprove(enrollment.id)" :disabled="actionLoading === enrollment.id"
                       class="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
-                      <i class="fas fa-check mr-1"></i>Duyệt
+                      <i class="fas fa-check mr-1"></i>Approve
                     </button>
                     <button @click="handleReject(enrollment.id)" :disabled="actionLoading === enrollment.id"
                       class="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50">
-                      <i class="fas fa-times mr-1"></i>Từ chối
+                      <i class="fas fa-times mr-1"></i>Reject
                     </button>
                   </div>
                 </td>
@@ -135,7 +135,7 @@
       <div v-if="activeTab === 'students'">
         <div v-if="activeEnrollments.length === 0" class="text-center py-12">
           <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
-          <p class="text-gray-500">Chưa có học sinh nào trong lớp</p>
+          <p class="text-gray-500">No students in the class</p>
         </div>
 
         <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -143,12 +143,12 @@
             <thead class="bg-gray-50">
               <tr>
                 <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Học sinh
+                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Student
                 </th>
                 <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ngày tham
-                  gia</th>
-                <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Hành động
+                <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date of
+                  participation</th>
+                <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions
                 </th>
               </tr>
             </thead>
@@ -170,7 +170,7 @@
                   <div class="flex items-center justify-end">
                     <button @click="confirmRemove(enrollment)"
                       class="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <i class="fas fa-user-minus mr-1"></i>Xóa khỏi lớp
+                      <i class="fas fa-user-minus mr-1"></i>Delete
                     </button>
                   </div>
                 </td>
@@ -183,37 +183,37 @@
       <!-- Tab: Settings -->
       <div v-if="activeTab === 'settings'">
         <div class="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl">
-          <h3 class="text-lg font-semibold text-gray-800 mb-6">Chỉnh sửa lớp học</h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-6">Edit Class</h3>
           <form @submit.prevent="handleUpdate" class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Tên lớp học</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
               <input v-model="editForm.name" type="text"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Mô tả</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
               <textarea v-model="editForm.description" rows="3"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm resize-none"></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Học kỳ</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Semester</label>
                 <input v-model="editForm.semester" type="text"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Sĩ số tối đa</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Maximum Students</label>
                 <input v-model.number="editForm.max_students" type="number" min="1" max="500"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Trạng thái</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
               <select v-model="editForm.status"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm">
-                <option value="active">Đang hoạt động</option>
-                <option value="draft">Bản nháp</option>
-                <option value="archived">Lưu trữ</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
 
@@ -225,17 +225,17 @@
               <button type="submit" :disabled="updating"
                 class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50">
                 <i v-if="updating" class="fas fa-spinner fa-spin mr-2"></i>
-                {{ updating ? 'Đang lưu...' : 'Lưu thay đổi' }}
+                {{ updating ? 'Saving...' : 'Save Changes' }}
               </button>
             </div>
           </form>
 
           <!-- Danger Zone -->
           <div class="mt-10 pt-6 border-t border-red-200">
-            <h4 class="text-sm font-semibold text-red-600 mb-3">Vùng nguy hiểm</h4>
+            <h4 class="text-sm font-semibold text-red-600 mb-3">Danger Zone</h4>
             <button @click="handleDelete"
               class="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
-              <i class="fas fa-trash mr-2"></i>Xóa lớp học
+              <i class="fas fa-trash mr-2"></i>Delete Class
             </button>
           </div>
         </div>
@@ -247,18 +247,18 @@
       <div v-if="removeTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/50" @click="removeTarget = null"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-2">Xác nhận xóa</h3>
+          <h3 class="text-lg font-bold text-gray-800 mb-2">Confirm Delete</h3>
           <p class="text-sm text-gray-500 mb-6">
-            Bạn có chắc muốn xóa <strong>{{ removeTarget.user?.name }}</strong> khỏi lớp học?
+            Are you sure you want to remove <strong>{{ removeTarget.user?.name }}</strong> from the class?
           </p>
           <div class="flex items-center gap-3">
             <button @click="removeTarget = null"
               class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
-              Hủy
+              Cancel
             </button>
             <button @click="handleRemove(removeTarget.id)"
               class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium">
-              Xóa
+              Delete
             </button>
           </div>
         </div>
@@ -314,9 +314,9 @@ const activeEnrollments = computed(() =>
 )
 
 const tabs = computed(() => [
-  { key: 'pending', label: 'Yêu cầu tham gia', count: pendingEnrollments.value.length },
-  { key: 'students', label: 'Danh sách học sinh', count: activeEnrollments.value.length },
-  { key: 'settings', label: 'Cài đặt', count: 0 },
+  { key: 'pending', label: 'Pending Requests', count: pendingEnrollments.value.length },
+  { key: 'students', label: 'Student List', count: activeEnrollments.value.length },
+  { key: 'settings', label: 'Settings', count: 0 },
 ])
 
 const fetchClassDetail = async () => {
@@ -336,7 +336,7 @@ const fetchClassDetail = async () => {
     }
   } catch (err) {
     console.error(err)
-    showToast('Không thể tải thông tin lớp học', 'error')
+    showToast('Unable to load class information', 'error')
   } finally {
     loading.value = false
   }
@@ -346,10 +346,10 @@ const handleApprove = async (enrollmentId) => {
   actionLoading.value = enrollmentId
   try {
     await api.class.approveEnrollment(enrollmentId)
-    showToast('Đã duyệt học sinh vào lớp')
+    showToast('Student approved for the class')
     fetchClassDetail()
   } catch (err) {
-    showToast(err.response?.data?.message || 'Lỗi khi duyệt', 'error')
+    showToast(err.response?.data?.message || 'Error approving student', 'error')
   } finally {
     actionLoading.value = null
   }
@@ -359,10 +359,10 @@ const handleReject = async (enrollmentId) => {
   actionLoading.value = enrollmentId
   try {
     await api.class.rejectEnrollment(enrollmentId)
-    showToast('Đã từ chối yêu cầu')
+    showToast('Request rejected')
     fetchClassDetail()
   } catch (err) {
-    showToast(err.response?.data?.message || 'Lỗi khi từ chối', 'error')
+    showToast(err.response?.data?.message || 'Error rejecting request', 'error')
   } finally {
     actionLoading.value = null
   }
@@ -375,11 +375,11 @@ const confirmRemove = (enrollment) => {
 const handleRemove = async (enrollmentId) => {
   try {
     await api.class.removeStudent(enrollmentId)
-    showToast('Đã xóa học sinh khỏi lớp')
+    showToast('Student removed from the class')
     removeTarget.value = null
     fetchClassDetail()
   } catch (err) {
-    showToast(err.response?.data?.message || 'Lỗi khi xóa', 'error')
+    showToast(err.response?.data?.message || 'Error removing student', 'error')
   }
 }
 
@@ -389,34 +389,34 @@ const handleUpdate = async () => {
   try {
     const classId = props.id || route.params.id
     await api.class.updateClass(classId, editForm.value)
-    showToast('Cập nhật thành công!')
+    showToast('Update successful!')
     fetchClassDetail()
   } catch (err) {
     const msg = err.response?.data?.message || err.response?.data?.errors
-    updateError.value = typeof msg === 'object' ? Object.values(msg).flat().join(', ') : (msg || 'Có lỗi xảy ra')
+    updateError.value = typeof msg === 'object' ? Object.values(msg).flat().join(', ') : (msg || 'An error occurred')
   } finally {
     updating.value = false
   }
 }
 
 const handleDelete = async () => {
-  if (!confirm('Bạn có chắc chắn muốn xóa lớp học này? Hành động này không thể hoàn tác.')) return
+  if (!confirm('Are you sure you want to delete this class? This action cannot be undone.')) return
   try {
     const classId = props.id || route.params.id
     await api.class.deleteClass(classId)
-    showToast('Đã xóa lớp học')
+    showToast('Class deleted')
     router.push({ name: 'TeacherClasses' })
   } catch (err) {
-    showToast(err.response?.data?.message || 'Không thể xóa lớp học', 'error')
+    showToast(err.response?.data?.message || 'Unable to delete class', 'error')
   }
 }
 
 const copyCode = async (code) => {
   try {
     await navigator.clipboard.writeText(code)
-    showToast('Đã sao chép mã lớp!')
+    showToast('Class code copied!')
   } catch {
-    showToast('Không thể sao chép', 'error')
+    showToast('Unable to copy class code', 'error')
   }
 }
 
@@ -426,7 +426,7 @@ const formatDate = (date) => {
 }
 
 const statusLabel = (status) => {
-  const labels = { active: 'Hoạt động', draft: 'Bản nháp', archived: 'Lưu trữ' }
+  const labels = { active: 'Active', draft: 'Draft', archived: 'Archived' }
   return labels[status] || status
 }
 

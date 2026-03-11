@@ -25,7 +25,7 @@
             @error="onAvatarError" />
           <div v-if="currentUser" class="hidden sm:block text-left">
             <p class="text-sm font-semibold text-gray-700 leading-tight">{{ currentUser.name }}</p>
-            <p class="text-xs text-gray-500">Giáo viên</p>
+            <p class="text-xs text-gray-500">Teacher</p>
           </div>
           <svg class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': dropdownVisible }" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
@@ -46,11 +46,11 @@
             </div>
             <router-link to="/teacher/settings" @click="dropdownVisible = false"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-              <i class="fas fa-user"></i> Thông tin cá nhân
+              <i class="fas fa-user"></i> Personal Information
             </router-link>
             <button @click="handleLogout"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left">
-              <i class="fas fa-sign-out-alt"></i> Đăng xuất
+              <i class="fas fa-sign-out-alt"></i> Logout
             </button>
           </div>
         </Transition>

@@ -20,6 +20,7 @@ class LessonService
     private readonly PresentationRepositoryInterface $presentationRepository,
     private readonly QuizRepositoryInterface $quizRepository,
     private readonly OpenAIService $openAIService,
+    private readonly AiServiceClient $aiServiceClient,
   ) {}
 
   /**
@@ -183,6 +184,11 @@ class LessonService
       }
 
       DB::commit();
+
+      // Gửi nội dung tới RAG service để indexing (ngoài transaction)
+      if (!empty($contentText)) {
+        $this->indexContentForRAG($lesson->id, $contentText);
+      }
 
       // Sau khi commit, gọi AI sinh slide & quiz (ngoài transaction)
       $aiResult = null;
@@ -387,12 +393,26 @@ class LessonService
         $lesson->presentation->slides()->forceDelete();
       }
 
-      // Sinh slides mới
-      $slides = $this->openAIService->generatePresentationSlides(
-        $contentText,
-        $lesson->title,
-        $slideCount
-      );
+      // Re-index nội dung cho RAG
+      $this->indexContentForRAG($lesson->id, $contentText);
+
+      // Sinh slides mới - ưu tiên RAG
+      $slides = null;
+      $generationMethod = 'direct';
+      if ($this->aiServiceClient->healthCheck()) {
+        $slides = $this->generateSlidesViaRAG($lesson, $slideCount);
+        if ($slides) {
+          $generationMethod = 'rag';
+        }
+      }
+
+      if (empty($slides)) {
+        $slides = $this->openAIService->generatePresentationSlides(
+          $contentText,
+          $lesson->title,
+          $slideCount
+        );
+      }
 
       // Sinh hình ảnh cho slides có image_prompt
       $slideImages = $this->openAIService->generateSlideImages($slides);
@@ -480,12 +500,21 @@ class LessonService
         ];
       }
 
-      // Sinh câu hỏi mới
-      $questions = $this->openAIService->generateQuizQuestions(
-        $contentText,
-        $lesson->title,
-        $questionCount
-      );
+      // Re-index nội dung cho RAG và sinh câu hỏi
+      $this->indexContentForRAG($lesson->id, $contentText);
+
+      $questions = null;
+      if ($this->aiServiceClient->healthCheck()) {
+        $questions = $this->generateQuizViaRAG($lesson, $questionCount);
+      }
+
+      if (empty($questions)) {
+        $questions = $this->openAIService->generateQuizQuestions(
+          $contentText,
+          $lesson->title,
+          $questionCount
+        );
+      }
 
       // Tạo quiz mới
       $quiz = $this->quizRepository->create([
@@ -557,13 +586,14 @@ class LessonService
   }
 
   /**
-   * Gọi AI sinh slide + quiz cùng lúc
+   * Gọi AI sinh slide + quiz cùng lúc (RAG pipeline ưu tiên, fallback OpenAI trực tiếp)
    */
   private function generateAIContent($lesson, string $contentText, array $data): array
   {
     $result = [
       'slides' => false,
       'quiz' => false,
+      'method' => 'direct', // 'rag' hoặc 'direct'
     ];
 
     $generateSlides = $data['generate_slides'] ?? true;
@@ -571,15 +601,26 @@ class LessonService
     $slideCount = $data['slide_count'] ?? 10;
     $questionCount = $data['question_count'] ?? 5;
 
+    $useRag = $this->aiServiceClient->healthCheck();
+
     // Sinh slides
     if ($generateSlides) {
       try {
-        sleep(1); // Small delay to avoid rate limit
-        $slides = $this->openAIService->generatePresentationSlides(
-          $contentText,
-          $lesson->title,
-          $slideCount
-        );
+        if ($useRag) {
+          $slides = $this->generateSlidesViaRAG($lesson, $slideCount);
+          $result['method'] = 'rag';
+        }
+
+        // Fallback nếu RAG không trả kết quả
+        if (empty($slides)) {
+          sleep(1);
+          $slides = $this->openAIService->generatePresentationSlides(
+            $contentText,
+            $lesson->title,
+            $slideCount
+          );
+          $result['method'] = 'direct';
+        }
 
         $presentation = $this->presentationRepository->create([
           'lesson_id' => $lesson->id,
@@ -615,17 +656,26 @@ class LessonService
       }
     }
 
-    // Sinh quiz questions (delay để tránh rate limit sau khi sinh slides)
+    // Sinh quiz questions
     if ($generateQuiz) {
       try {
-        if ($generateSlides) {
-          sleep(3); // Delay giữa 2 lần gọi AI
+        if ($useRag) {
+          $questions = $this->generateQuizViaRAG($lesson, $questionCount);
+          $result['method'] = 'rag';
         }
-        $questions = $this->openAIService->generateQuizQuestions(
-          $contentText,
-          $lesson->title,
-          $questionCount
-        );
+
+        // Fallback nếu RAG không trả kết quả
+        if (empty($questions)) {
+          if ($generateSlides) {
+            sleep(3);
+          }
+          $questions = $this->openAIService->generateQuizQuestions(
+            $contentText,
+            $lesson->title,
+            $questionCount
+          );
+          $result['method'] = 'direct';
+        }
 
         $quiz = $this->quizRepository->create([
           'lesson_id' => $lesson->id,
@@ -678,6 +728,100 @@ class LessonService
     }
 
     return $result;
+  }
+
+  /**
+   * Gửi nội dung bài học tới RAG service để indexing
+   */
+  private function indexContentForRAG(int $lessonId, string $contentText): void
+  {
+    try {
+      $result = $this->aiServiceClient->processDocumentText($lessonId, $contentText);
+      Log::info('RAG indexing completed', [
+        'lesson_id' => $lessonId,
+        'chunks_count' => $result['chunks_count'] ?? 0,
+      ]);
+    } catch (\Exception $e) {
+      Log::warning('RAG indexing failed, will use direct OpenAI as fallback', [
+        'lesson_id' => $lessonId,
+        'error' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Sinh slides qua RAG pipeline (Python AI Service)
+   */
+  private function generateSlidesViaRAG($lesson, int $slideCount): ?array
+  {
+    try {
+      $response = $this->aiServiceClient->generateSlides($lesson->id, $slideCount);
+
+      if (!$response || !($response['success'] ?? false) || empty($response['slides'])) {
+        return null;
+      }
+
+      // Map RAG response format sang format mà LessonService mong đợi
+      return collect($response['slides'])->map(function ($slide, $index) {
+        return [
+          'order' => $slide['slide_number'] ?? ($index + 1),
+          'title' => $slide['title'] ?? '',
+          'content' => is_array($slide['bullet_points'] ?? null)
+            ? implode("\n", $slide['bullet_points'])
+            : ($slide['bullet_points'] ?? ''),
+          'notes' => $slide['speaker_notes'] ?? null,
+          'layout' => 'content',
+          'image_prompt' => $slide['image_suggestion'] ?? null,
+        ];
+      })->toArray();
+    } catch (\Exception $e) {
+      Log::warning('RAG slide generation failed, falling back to direct OpenAI', [
+        'lesson_id' => $lesson->id,
+        'error' => $e->getMessage(),
+      ]);
+      return null;
+    }
+  }
+
+  /**
+   * Sinh quiz qua RAG pipeline (Python AI Service)
+   */
+  private function generateQuizViaRAG($lesson, int $questionCount): ?array
+  {
+    try {
+      $response = $this->aiServiceClient->generateQuiz($lesson->id, $questionCount);
+
+      if (!$response || !($response['success'] ?? false) || empty($response['questions'])) {
+        return null;
+      }
+
+      // Map RAG response format sang format mà LessonService mong đợi
+      return collect($response['questions'])->map(function ($q, $index) {
+        $options = collect($q['options'] ?? [])->map(function ($opt, $optIndex) {
+          return [
+            'option_text' => $opt['option_text'] ?? '',
+            'is_correct' => $opt['is_correct'] ?? false,
+            'order' => $optIndex + 1,
+            'explanation' => $opt['explanation'] ?? null,
+          ];
+        })->toArray();
+
+        return [
+          'order' => $q['question_number'] ?? ($index + 1),
+          'content' => $q['content'] ?? '',
+          'question_type' => $q['question_type'] ?? 'multiple_choice',
+          'explanation' => $q['explanation'] ?? null,
+          'points' => $q['points'] ?? 10,
+          'options' => $options,
+        ];
+      })->toArray();
+    } catch (\Exception $e) {
+      Log::warning('RAG quiz generation failed, falling back to direct OpenAI', [
+        'lesson_id' => $lesson->id,
+        'error' => $e->getMessage(),
+      ]);
+      return null;
+    }
   }
 
   /**

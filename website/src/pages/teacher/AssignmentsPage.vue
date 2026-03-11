@@ -3,17 +3,17 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-bold text-gray-800">Bài tập</h2>
-        <p class="text-gray-500 mt-1">Quản lý bài tập cho các lớp học</p>
+        <h2 class="text-2xl font-bold text-gray-800">Assignments</h2>
+        <p class="text-gray-500 mt-1">Manage assignments for your classes</p>
       </div>
     </div>
 
     <!-- Class Selector -->
     <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-1.5">Chọn lớp học</label>
+      <label class="block text-sm font-medium text-gray-700 mb-1.5">Select Class</label>
       <select v-model="selectedClassId" @change="fetchAssignments"
         class="w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm">
-        <option value="">-- Chọn lớp --</option>
+        <option value="">-- Select Class --</option>
         <option v-for="cls in classes" :key="cls.id" :value="cls.id">
           {{ cls.name }} ({{ cls.code }})
         </option>
@@ -23,18 +23,18 @@
     <!-- No class selected -->
     <div v-if="!selectedClassId" class="text-center py-16">
       <i class="fas fa-tasks text-5xl text-gray-300 mb-4"></i>
-      <h3 class="text-lg font-semibold text-gray-600 mb-2">Chọn lớp để xem bài tập</h3>
-      <p class="text-gray-400">Chọn một lớp từ danh sách bên trên</p>
+      <h3 class="text-lg font-semibold text-gray-600 mb-2">Select a class to view assignments</h3>
+      <p class="text-gray-400">Choose a class from the list above</p>
     </div>
 
     <template v-else>
       <!-- Action Bar -->
       <div class="flex items-center justify-between mb-6">
-        <p class="text-sm text-gray-500">{{ assignments.length }} bài tập</p>
+        <p class="text-sm text-gray-500">{{ assignments.length }} assignments</p>
         <button @click="showCreateModal = true"
           class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
           <i class="fas fa-plus"></i>
-          Tạo bài tập
+          Create Assignment
         </button>
       </div>
 
@@ -46,11 +46,11 @@
       <!-- Empty State -->
       <div v-else-if="assignments.length === 0" class="text-center py-16">
         <i class="fas fa-tasks text-5xl text-gray-300 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-600 mb-2">Chưa có bài tập</h3>
-        <p class="text-gray-400 mb-6">Tạo bài tập đầu tiên cho lớp học</p>
+        <h3 class="text-lg font-semibold text-gray-600 mb-2">No assignments</h3>
+        <p class="text-gray-400 mb-6">Create the first assignment for this class</p>
         <button @click="showCreateModal = true"
           class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
-          <i class="fas fa-plus mr-2"></i>Tạo bài tập
+          <i class="fas fa-plus mr-2"></i>Create Assignment
         </button>
       </div>
 
@@ -65,7 +65,7 @@
                 <h3 class="text-lg font-semibold text-gray-800 truncate group-hover:text-blue-600 transition-colors">
                   {{ assignment.title }}
                 </h3>
-                <p class="text-sm text-gray-500 line-clamp-2 mt-1">{{ assignment.description || 'Không có mô tả' }}</p>
+                <p class="text-sm text-gray-500 line-clamp-2 mt-1">{{ assignment.description || 'No description' }}</p>
               </div>
               <span :class="statusClass(assignment.status)"
                 class="px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-3">
@@ -81,15 +81,15 @@
               </div>
               <div class="flex items-center gap-1.5">
                 <i class="fas fa-star text-yellow-500"></i>
-                <span>{{ assignment.max_score }} điểm</span>
+                <span>{{ assignment.max_score }} points</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <i class="fas fa-users text-blue-500"></i>
-                <span>{{ assignment.submission_count || 0 }} nộp</span>
+                <span>{{ assignment.submission_count || 0 }} submissions</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <i class="fas fa-check-circle text-green-500"></i>
-                <span>{{ assignment.graded_count || 0 }} đã chấm</span>
+                <span>{{ assignment.graded_count || 0 }} graded</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <i class="fas fa-paperclip text-gray-400"></i>
@@ -100,7 +100,7 @@
             <!-- Overdue warning -->
             <div v-if="isOverdue(assignment)" class="mt-3 flex items-center gap-1.5 text-sm text-red-500">
               <i class="fas fa-exclamation-triangle"></i>
-              <span>Đã quá hạn</span>
+              <span>Expired</span>
             </div>
           </div>
         </div>
@@ -114,7 +114,7 @@
         <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           <div class="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl z-10">
             <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800">Tạo bài tập mới</h3>
+              <h3 class="text-lg font-semibold text-gray-800">Create New Assignment</h3>
               <button @click="showCreateModal = false" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-lg"></i>
               </button>
@@ -124,39 +124,40 @@
           <form @submit.prevent="createAssignment" class="p-6 space-y-5">
             <!-- Title -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
               <input v-model="form.title" type="text" required
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="Nhập tiêu đề bài tập" />
+                placeholder="Enter the assignment title" />
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <textarea v-model="form.description" rows="3"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="Mô tả ngắn gọn về bài tập"></textarea>
+                placeholder="Enter a brief description of the assignment"></textarea>
             </div>
 
             <!-- Instructions -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Hướng dẫn làm bài</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Instructions for completing the
+                assignment</label>
               <textarea v-model="form.instructions" rows="4"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                placeholder="Hướng dẫn chi tiết cho học sinh"></textarea>
+                placeholder="Enter detailed instructions for students"></textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <!-- Due Date -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Hạn nộp</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <input v-model="form.due_date" type="datetime-local"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" />
               </div>
 
               <!-- Max Score -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Điểm tối đa</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
                 <input v-model.number="form.max_score" type="number" min="1" max="1000"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm" />
               </div>
@@ -165,22 +166,22 @@
             <div class="grid grid-cols-2 gap-4">
               <!-- Submission Type -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Loại nộp bài</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Submission Type</label>
                 <select v-model="form.submission_type"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
-                  <option value="file">File đính kèm</option>
-                  <option value="text">Văn bản</option>
-                  <option value="both">Cả hai</option>
+                  <option value="file">File Attachment</option>
+                  <option value="text">Text</option>
+                  <option value="both">Both</option>
                 </select>
               </div>
 
               <!-- Status -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select v-model="form.status"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
-                  <option value="draft">Nháp</option>
-                  <option value="published">Xuất bản</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
                 </select>
               </div>
             </div>
@@ -190,24 +191,24 @@
               <label class="flex items-center gap-2 cursor-pointer">
                 <input v-model="form.allow_late_submission" type="checkbox"
                   class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
-                <span class="text-sm text-gray-700">Cho phép nộp trễ</span>
+                <span class="text-sm text-gray-700">Allow Late Submission</span>
               </label>
               <div v-if="form.allow_late_submission" class="flex items-center gap-2">
                 <input v-model.number="form.late_penalty" type="number" min="0" max="100"
                   class="w-20 px-3 py-1.5 border border-gray-300 rounded-lg text-sm" />
-                <span class="text-sm text-gray-500">% trừ điểm</span>
+                <span class="text-sm text-gray-500">% deduction</span>
               </div>
             </div>
 
             <!-- Files -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">File đính kèm (tài liệu tham khảo)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Attachment Files (Reference Materials)</label>
               <div
                 class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors cursor-pointer"
                 @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop">
                 <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
-                <p class="text-sm text-gray-500">Click hoặc kéo thả file vào đây</p>
-                <p class="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, TXT, JPG, PNG (tối đa 20MB/file)</p>
+                <p class="text-sm text-gray-500">Click or drag and drop files here</p>
+                <p class="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, TXT, JPG, PNG (up to 20MB/file)</p>
               </div>
               <input ref="fileInput" type="file" multiple class="hidden" @change="handleFileSelect"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" />
@@ -230,12 +231,12 @@
             <div class="flex justify-end gap-3 pt-4 border-t">
               <button type="button" @click="showCreateModal = false"
                 class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
-                Huỷ
+                Cancel
               </button>
               <button type="submit" :disabled="creating"
                 class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm font-medium">
                 <i v-if="creating" class="fas fa-spinner fa-spin mr-2"></i>
-                {{ creating ? 'Đang tạo...' : 'Tạo bài tập' }}
+                {{ creating ? 'Creating...' : 'Create Assignment' }}
               </button>
             </div>
           </form>
@@ -289,7 +290,7 @@ onMounted(async () => {
     const res = await api.class.getClasses()
     classes.value = res.data || []
   } catch (e) {
-    showToast('Lỗi khi tải danh sách lớp', 'error')
+    showToast('Error loading class list', 'error')
   }
 })
 
@@ -305,7 +306,7 @@ const fetchAssignments = async () => {
     const res = await api.assignment.getAssignmentsByClass(selectedClassId.value)
     assignments.value = res.data || []
   } catch (e) {
-    showToast('Lỗi khi tải bài tập', 'error')
+    showToast('Error loading assignments', 'error')
   } finally {
     loading.value = false
   }
@@ -332,12 +333,12 @@ const createAssignment = async () => {
     })
 
     await api.assignment.createAssignment(formData)
-    showToast('Tạo bài tập thành công')
+    showToast('Assignment created successfully')
     showCreateModal.value = false
     resetForm()
     fetchAssignments()
   } catch (e) {
-    showToast(e.response?.data?.message || 'Lỗi khi tạo bài tập', 'error')
+    showToast(e.response?.data?.message || 'Error creating assignment', 'error')
   } finally {
     creating.value = false
   }
@@ -384,12 +385,12 @@ const statusClass = (status) => {
 }
 
 const statusLabel = (status) => {
-  const map = { draft: 'Nháp', published: 'Đã xuất bản', closed: 'Đã đóng', archived: 'Lưu trữ' }
+  const map = { draft: 'Draft', published: 'Published', closed: 'Closed', archived: 'Archived' }
   return map[status] || status
 }
 
 const formatDate = (date) => {
-  if (!date) return 'Không có hạn'
+  if (!date) return 'No due date'
   return new Date(date).toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
   })

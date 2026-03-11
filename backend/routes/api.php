@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\StudentLessonController;
@@ -31,6 +32,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
+
+    // ==========================================
+    // Teacher - Dashboard
+    // ==========================================
+    Route::get('/teacher/dashboard', [DashboardController::class, 'teacherDashboard']);
 
     // ==========================================
     // Teacher - Quản lý lớp học

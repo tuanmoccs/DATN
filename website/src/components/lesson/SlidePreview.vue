@@ -42,7 +42,8 @@
         <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white cursor-pointer"
           @click="openFullscreen">
           <!-- Slide Content Area -->
-          <div class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 p-8 md:p-12 flex flex-col justify-center relative">
+          <div
+            class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 p-8 md:p-12 flex flex-col justify-center relative">
             <!-- Slide number badge -->
             <div class="absolute top-4 left-4 flex items-center gap-2">
               <span class="text-xs font-mono bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full">
@@ -60,14 +61,19 @@
             </div>
             <!-- Title & Content -->
             <h3 class="text-xl md:text-2xl font-bold text-white mb-4 mt-4">{{ currentSlide.title }}</h3>
-            <div class="text-blue-100 text-sm md:text-base whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+            <div
+              class="text-blue-100 text-sm md:text-base whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               {{ currentSlide.content }}
+            </div>
+            <div class="flex justify-center">
+              <img :src="currentSlide.image_url" class="rounded-xl shadow-xl object-cover max-h-[320px]" />
             </div>
           </div>
 
           <!-- Speaker Notes -->
           <div v-if="currentSlide.notes" class="px-6 py-4 bg-amber-50 border-t border-amber-100">
-            <p class="text-xs font-semibold text-amber-700 mb-1"><i class="fas fa-sticky-note mr-1"></i> Speaker Notes</p>
+            <p class="text-xs font-semibold text-amber-700 mb-1"><i class="fas fa-sticky-note mr-1"></i> Speaker Notes
+            </p>
             <p class="text-sm text-amber-800 leading-relaxed">{{ currentSlide.notes }}</p>
           </div>
         </div>
@@ -82,13 +88,12 @@
       <!-- Slide Thumbnails Strip -->
       <div class="relative">
         <div ref="thumbStrip" class="flex gap-2 overflow-x-auto pb-2 px-1 snap-x snap-mandatory custom-scrollbar-h">
-          <button v-for="(slide, idx) in slides" :key="slide.id" @click="goTo(idx)"
-            :class="[
-              'flex-shrink-0 w-32 h-20 rounded-lg border-2 transition-all snap-start overflow-hidden',
-              idx === currentIndex
-                ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
-                : 'border-gray-200 hover:border-gray-300 opacity-70 hover:opacity-100'
-            ]">
+          <button v-for="(slide, idx) in slides" :key="slide.id" @click="goTo(idx)" :class="[
+            'flex-shrink-0 w-32 h-20 rounded-lg border-2 transition-all snap-start overflow-hidden',
+            idx === currentIndex
+              ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
+              : 'border-gray-200 hover:border-gray-300 opacity-70 hover:opacity-100'
+          ]">
             <div class="w-full h-full bg-gradient-to-br from-blue-600 to-blue-800 p-2 flex flex-col justify-end">
               <span class="text-[10px] text-blue-200 font-mono">{{ slide.order }}</span>
               <span class="text-[11px] text-white font-medium leading-tight line-clamp-2">{{ slide.title }}</span>
@@ -99,7 +104,8 @@
 
       <!-- Keyboard hint -->
       <p class="text-xs text-gray-400 text-center">
-        <i class="fas fa-keyboard mr-1"></i> Use <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">←</kbd>
+        <i class="fas fa-keyboard mr-1"></i> Use <kbd
+          class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">←</kbd>
         <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">→</kbd> arrow keys to navigate
       </p>
     </div>
@@ -127,13 +133,19 @@
           </button>
 
           <div class="w-full max-w-5xl">
-            <div class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-10 md:p-16 flex flex-col justify-center">
+            <div
+              class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-10 md:p-16 flex flex-col justify-center">
               <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">{{ currentSlide.title }}</h2>
-              <div class="text-blue-100 text-lg md:text-xl whitespace-pre-line leading-relaxed">{{ currentSlide.content }}</div>
+              <div class="text-blue-100 text-lg md:text-xl whitespace-pre-line leading-relaxed">{{ currentSlide.content
+              }}</div>
+              <div class="flex justify-center">
+                <img :src="currentSlide.image_url" class="rounded-xl shadow-xl object-cover max-h-[320px]" />
+              </div>
             </div>
 
             <div v-if="currentSlide.notes" class="mt-4 bg-amber-900/30 rounded-xl px-6 py-4">
-              <p class="text-xs font-semibold text-amber-400 mb-1"><i class="fas fa-sticky-note mr-1"></i> Speaker Notes</p>
+              <p class="text-xs font-semibold text-amber-400 mb-1"><i class="fas fa-sticky-note mr-1"></i> Speaker Notes
+              </p>
               <p class="text-sm text-amber-200 leading-relaxed">{{ currentSlide.notes }}</p>
             </div>
           </div>
@@ -147,11 +159,10 @@
 
         <!-- Bottom dots -->
         <div class="flex items-center justify-center gap-1.5 py-4">
-          <button v-for="(slide, idx) in slides" :key="slide.id" @click="goTo(idx)"
-            :class="[
-              'w-2 h-2 rounded-full transition-all',
-              idx === currentIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50'
-            ]" />
+          <button v-for="(slide, idx) in slides" :key="slide.id" @click="goTo(idx)" :class="[
+            'w-2 h-2 rounded-full transition-all',
+            idx === currentIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50'
+          ]" />
         </div>
       </div>
     </Teleport>
@@ -242,6 +253,7 @@ const handleRegenerate = async () => {
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
@@ -250,10 +262,12 @@ const handleRegenerate = async () => {
 .custom-scrollbar-h::-webkit-scrollbar {
   height: 4px;
 }
+
 .custom-scrollbar-h::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.15);
   border-radius: 4px;
 }
+
 .custom-scrollbar-h::-webkit-scrollbar-track {
   background: transparent;
 }
