@@ -60,13 +60,18 @@
         </div>
 
         <!-- Actions -->
-        <div class="p-3 bg-gray-50 flex items-center gap-2">
+        <div class="p-3 bg-gray-50 flex items-center gap-2 flex-wrap">
           <button @click="viewQuiz(quiz)"
             class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium">
             <i class="fas fa-eye mr-1"></i> View & Edit Questions
           </button>
+          <button @click="handleExportQuiz(quiz)" :disabled="exporting === quiz.id"
+            class="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium disabled:opacity-50">
+            <i :class="exporting === quiz.id ? 'fas fa-spinner fa-spin' : 'fas fa-download'" class="mr-1"></i>
+            {{ exporting === quiz.id ? 'Exporting...' : 'Export PDF' }}
+          </button>
           <button v-if="quiz.status === 'draft'" @click="publishQuiz(quiz)"
-            class="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium">
+            class="px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium">
             <i class="fas fa-check-circle mr-1"></i> Publish
           </button>
           <button @click="confirmDeleteQuiz(quiz)"
@@ -161,7 +166,7 @@
                     <span :class="option.is_correct ? 'text-green-700 font-medium' : 'text-gray-700'">{{
                       option.option_text }}</span>
                     <span v-if="option.explanation" class="text-xs text-gray-400 ml-auto italic">{{ option.explanation
-                      }}</span>
+                    }}</span>
                   </div>
                 </template>
                 <template v-else>
@@ -295,6 +300,7 @@ const emit = defineEmits(['refresh', 'toast'])
 
 const api = useApi()
 const regenerating = ref(false)
+const exporting = ref(null)
 const selectedQuiz = ref(null)
 const editingQuestion = ref(null)
 const saving = ref(false)
@@ -464,6 +470,27 @@ const handleRegenerateQuiz = async () => {
     emit('toast', err.response?.data?.message || 'Failed to generate quiz', 'error')
   } finally {
     regenerating.value = false
+  }
+}
+
+const handleExportQuiz = async (quiz) => {
+  exporting.value = quiz.id
+  try {
+    const blob = await api.lesson.exportQuizPDF(quiz.id)
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${quiz.title || 'quiz'}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    emit('toast', 'Quiz exported successfully!', 'success')
+  } catch (err) {
+    emit('toast', err.response?.data?.message || 'Failed to export quiz', 'error')
+  } finally {
+    exporting.value = null
   }
 }
 </script>

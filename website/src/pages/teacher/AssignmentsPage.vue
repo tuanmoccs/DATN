@@ -30,12 +30,23 @@
     <template v-else>
       <!-- Action Bar -->
       <div class="flex items-center justify-between mb-6">
-        <p class="text-sm text-gray-500">{{ assignments.length }} assignments</p>
+        <p class="text-sm text-gray-500">{{ filteredAssignments.length }} assignments</p>
         <button @click="showCreateModal = true"
           class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
           <i class="fas fa-plus"></i>
           Create Assignment
         </button>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="mb-6 flex items-center gap-3">
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input v-model="searchQuery" type="text" placeholder="Search by assignment name..."
+              class="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -44,11 +55,13 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="assignments.length === 0" class="text-center py-16">
+      <div v-else-if="filteredAssignments.length === 0" class="text-center py-16">
         <i class="fas fa-tasks text-5xl text-gray-300 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-600 mb-2">No assignments</h3>
-        <p class="text-gray-400 mb-6">Create the first assignment for this class</p>
-        <button @click="showCreateModal = true"
+        <h3 class="text-lg font-semibold text-gray-600 mb-2">{{ searchQuery ? 'No assignments found' : 'No assignments'
+          }}</h3>
+        <p class="text-gray-400 mb-6">{{ searchQuery ? 'Try searching with different keywords' : 'Create the first
+          assignment for this class' }}</p>
+        <button v-if="!searchQuery" @click="showCreateModal = true"
           class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
           <i class="fas fa-plus mr-2"></i>Create Assignment
         </button>
@@ -56,7 +69,7 @@
 
       <!-- Assignment List -->
       <div v-else class="space-y-4">
-        <div v-for="assignment in assignments" :key="assignment.id"
+        <div v-for="assignment in filteredAssignments" :key="assignment.id"
           class="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all cursor-pointer group"
           @click="$router.push({ name: 'TeacherAssignmentDetail', params: { id: assignment.id } })">
           <div class="p-5">
@@ -256,7 +269,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useApi } from '@/plugins/api'
 
 const api = useApi()
@@ -265,6 +278,8 @@ const api = useApi()
 const classes = ref([])
 const selectedClassId = ref('')
 const assignments = ref([])
+const searchQuery = ref('')
+const searchResults = ref([])
 const loading = ref(false)
 const creating = ref(false)
 const showCreateModal = ref(false)
@@ -284,6 +299,33 @@ const form = reactive({
   late_penalty: 0,
 })
 
+// Computed
+const filteredAssignments = computed(() => {
+  return searchQuery.value.trim() ? searchResults.value : assignments.value
+})
+
+// Search assignments via API
+const searchAssignmentsAPI = async (query) => {
+  if (!selectedClassId.value) return
+
+  if (!query.trim()) {
+    searchResults.value = []
+    return
+  }
+
+  try {
+    const res = await api.assignment.searchAssignments(selectedClassId.value, query)
+    searchResults.value = res.data || []
+  } catch (err) {
+    console.error('Search error:', err)
+    searchResults.value = []
+  }
+}
+
+watch(searchQuery, (newQuery) => {
+  searchAssignmentsAPI(newQuery)
+}, { debounce: 300 })
+
 // Fetch classes on mount
 onMounted(async () => {
   try {
@@ -298,6 +340,8 @@ onMounted(async () => {
 const fetchAssignments = async () => {
   if (!selectedClassId.value) {
     assignments.value = []
+    searchResults.value = []
+    searchQuery.value = ''
     return
   }
 
@@ -305,6 +349,8 @@ const fetchAssignments = async () => {
   try {
     const res = await api.assignment.getAssignmentsByClass(selectedClassId.value)
     assignments.value = res.data || []
+    searchResults.value = []
+    searchQuery.value = ''
   } catch (e) {
     showToast('Error loading assignments', 'error')
   } finally {

@@ -30,12 +30,23 @@
     <template v-else>
       <!-- Action Bar -->
       <div class="flex items-center justify-between mb-6">
-        <p class="text-sm text-gray-500">{{ lessons.length }} lesson(s) found</p>
+        <p class="text-sm text-gray-500">{{ filteredLessons.length }} lesson(s) found</p>
         <button @click="$router.push({ name: 'TeacherLessonCreate', query: { class_id: selectedClassId } })"
           class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
           <i class="fas fa-plus"></i>
           Create Lesson
         </button>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="mb-6 flex items-center gap-3">
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input v-model="searchQuery" type="text" placeholder="Search by lesson name..."
+              class="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -44,11 +55,14 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="lessons.length === 0" class="text-center py-16">
+      <div v-else-if="filteredLessons.length === 0" class="text-center py-16">
         <i class="fas fa-file-alt text-5xl text-gray-300 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-600 mb-2">No lessons yet</h3>
-        <p class="text-gray-400 mb-6">Create your first lesson with AI-generated slides and quizzes</p>
-        <button @click="$router.push({ name: 'TeacherLessonCreate', query: { class_id: selectedClassId } })"
+        <h3 class="text-lg font-semibold text-gray-600 mb-2">{{ searchQuery ? 'No lessons found' : 'No lessons yet' }}
+        </h3>
+        <p class="text-gray-400 mb-6">{{ searchQuery ? 'Try searching with different keywords' : 'Create your first
+          lesson with AI - generated slides and quizzes' }}</p>
+        <button v-if="!searchQuery"
+          @click="$router.push({ name: 'TeacherLessonCreate', query: { class_id: selectedClassId } })"
           class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
           <i class="fas fa-plus mr-2"></i>Create Lesson
         </button>
@@ -56,7 +70,7 @@
 
       <!-- Lesson List -->
       <div v-else class="space-y-4">
-        <div v-for="lesson in lessons" :key="lesson.id"
+        <div v-for="lesson in filteredLessons" :key="lesson.id"
           class="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all cursor-pointer group"
           @click="$router.push({ name: 'TeacherLessonDetail', params: { id: lesson.id } })">
           <div class="p-5">
@@ -111,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useApi } from '@/plugins/api'
 
 const api = useApi()
@@ -119,6 +133,8 @@ const api = useApi()
 const classes = ref([])
 const lessons = ref([])
 const selectedClassId = ref('')
+const searchQuery = ref('')
+const searchResults = ref([])
 const loading = ref(false)
 
 const toast = ref({ show: false, message: '', type: 'success' })
@@ -139,12 +155,16 @@ const fetchClasses = async () => {
 const fetchLessons = async () => {
   if (!selectedClassId.value) {
     lessons.value = []
+    searchResults.value = []
+    searchQuery.value = ''
     return
   }
   loading.value = true
   try {
     const res = await api.lesson.getLessonsByClass(selectedClassId.value)
     lessons.value = res.data || []
+    searchResults.value = []
+    searchQuery.value = ''
   } catch (err) {
     showToast('Failed to load lessons', 'error')
   } finally {
@@ -164,6 +184,33 @@ const statusClass = (status) => {
   }
   return map[status] || 'bg-gray-100 text-gray-600'
 }
+
+const filteredLessons = computed(() => {
+  // If search is active, use search results; otherwise use all lessons
+  return searchQuery.value.trim() ? searchResults.value : lessons.value
+})
+
+// Search lessons via API
+const searchLessonsAPI = async (query) => {
+  if (!selectedClassId.value) return
+
+  if (!query.trim()) {
+    searchResults.value = []
+    return
+  }
+
+  try {
+    const res = await api.lesson.searchLessons(selectedClassId.value, query)
+    searchResults.value = res.data || []
+  } catch (err) {
+    console.error('Search error:', err)
+    searchResults.value = []
+  }
+}
+
+watch(searchQuery, (newQuery) => {
+  searchLessonsAPI(newQuery)
+}, { debounce: 300 })
 
 onMounted(() => {
   fetchClasses()

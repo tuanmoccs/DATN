@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Classz;
+use App\Models\Lesson;
 use App\Repositories\Contracts\LessonRepositoryInterface;
 use App\Repositories\Contracts\PresentationRepositoryInterface;
 use App\Repositories\Contracts\QuizRepositoryInterface;
@@ -866,5 +868,41 @@ class LessonService
       str_contains($mimeType, 'image') => 'image',
       default => 'other',
     };
+  }
+
+  public function searchLessons(int $classId, string $query, int $teacherId): array
+  {
+    try {
+      $class = Classz::find($classId);
+
+      if (!$class || $class->teacher_id !== $teacherId) {
+        return [
+          'status' => 403,
+          'data' => ['success' => false, 'message' => 'Bạn không có quyền truy cập lớp này'],
+        ];
+      }
+
+      $lessons = Lesson::where('class_id', $classId)
+        ->where('title', 'like', "%{$query}%")
+        ->with(['content', 'presentation', 'quizzes'])
+        ->orderBy('order', 'asc')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+      return [
+        'status' => 200,
+        'data' => ['success' => true, 'data' => $lessons],
+      ];
+    } catch (\Exception $e) {
+      \Illuminate\Support\Facades\Log::error('Lesson search failed', [
+        'class_id' => $classId,
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'status' => 500,
+        'data' => ['success' => false, 'message' => 'Lỗi khi tìm kiếm bài học'],
+      ];
+    }
   }
 }

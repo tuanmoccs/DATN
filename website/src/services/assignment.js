@@ -70,4 +70,10 @@ export default ($axios) => ({
       timeout: 120000,
     })
   },
+
+  searchAssignments(classId, query) {
+    return $axios.$get(`/teacher/assignments/class/${classId}/search`, {
+      params: { q: query },
+    })
+  },
 })

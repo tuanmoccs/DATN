@@ -33,6 +33,29 @@
           <input v-model.number="form.order" type="number" min="0"
             class="w-32 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
         </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Content (Text)</label>
+          <textarea v-model="form.content_text" rows="5"
+            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono"
+            placeholder="Enter lesson content text..."></textarea>
+          <p class="text-xs text-gray-500 mt-1">Lesson content displayed to students</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Upload Lesson Files</label>
+          <input type="file" multiple @change="handleFileSelect"
+            class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer" />
+          <p class="text-xs text-gray-500 mt-1">You can upload PDF, images, documents, etc.</p>
+          <div v-if="selectedFiles.length > 0" class="mt-3 space-y-2">
+            <p class="text-xs font-medium text-gray-600">Selected Files:</p>
+            <div v-for="(file, idx) in selectedFiles" :key="idx"
+              class="flex items-center justify-between bg-blue-50 p-2 rounded text-xs">
+              <span class="text-gray-700 truncate">{{ file.name }}</span>
+              <button type="button" @click="removeFile(idx)" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="mt-6 flex justify-end">
         <button @click="saveLesson" :disabled="saving"
@@ -89,7 +112,10 @@ const form = reactive({
   objectives: '',
   status: 'draft',
   order: 0,
+  content_text: '',
 })
+
+const selectedFiles = ref([])
 
 watch(() => props.lesson, (val) => {
   if (val) {
@@ -98,17 +124,40 @@ watch(() => props.lesson, (val) => {
     form.objectives = val.objectives || ''
     form.status = val.status || 'draft'
     form.order = val.order ?? 0
+    form.content_text = val.lessonContents?.find(c => c.type === 'text')?.content_text || ''
   }
+  selectedFiles.value = []
 }, { immediate: true })
+
+const handleFileSelect = (e) => {
+  selectedFiles.value = Array.from(e.target.files || [])
+}
+
+const removeFile = (idx) => {
+  selectedFiles.value.splice(idx, 1)
+}
 
 const saveLesson = async () => {
   saving.value = true
   try {
-    await $api.lesson.update(props.lesson.id, form)
+    const formData = new FormData()
+    formData.append('title', form.title)
+    formData.append('description', form.description)
+    formData.append('objectives', form.objectives)
+    formData.append('status', form.status)
+    formData.append('order', form.order)
+    formData.append('content_text', form.content_text)
+
+    // Add selected files
+    selectedFiles.value.forEach(file => {
+      formData.append('files[]', file)
+    })
+
+    await $api.lesson.updateLesson(props.lesson.id, formData)
     emit('toast', { type: 'success', message: 'Lesson updated successfully.' })
     emit('refresh')
-  } catch {
-    emit('toast', { type: 'error', message: 'Failed to update lesson.' })
+  } catch (err) {
+    emit('toast', { type: 'error', message: err.response?.data?.message || 'Failed to update lesson.' })
   } finally {
     saving.value = false
   }

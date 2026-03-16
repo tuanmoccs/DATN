@@ -147,4 +147,12 @@ class AssignmentController extends Controller
     );
     return response()->json($result['data'], $result['status']);
   }
+
+
+  public function search(int $classId, Request $request): JsonResponse
+  {
+    $query = $request->input('q', '');
+    $result = $this->assignmentService->searchAssignments($classId, $query, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
 }

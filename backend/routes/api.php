@@ -47,6 +47,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [ClassController::class, 'show']);
         Route::put('/{id}', [ClassController::class, 'update']);
         Route::delete('/{id}', [ClassController::class, 'destroy']);
+        Route::get('/{classId}/students/search', [ClassController::class, 'searchStudents']);
 
         // Quản lý yêu cầu tham gia
         Route::post('/enrollments/{enrollmentId}/approve', [ClassController::class, 'approveEnrollment']);
@@ -84,6 +85,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [LessonController::class, 'show']);
         Route::post('/{id}', [LessonController::class, 'update']); // POST thay PUT vì có file upload
         Route::delete('/{id}', [LessonController::class, 'destroy']);
+        Route::get('/class/{classId}/search', [LessonController::class, 'search']);
 
         // AI Generation (throttle riêng, cho phép request chạy lâu)
         Route::middleware('throttle:ai')->group(function () {
@@ -98,6 +100,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('teacher/quizzes')->group(function () {
         Route::get('/lesson/{lessonId}', [QuizController::class, 'index']);
         Route::get('/{id}', [QuizController::class, 'show']);
+        Route::get('/{id}/export-pdf', [QuizController::class, 'exportPDF']);
         Route::put('/{id}', [QuizController::class, 'update']);
         Route::delete('/{id}', [QuizController::class, 'destroy']);
         Route::post('/{id}/publish', [QuizController::class, 'publish']);
@@ -117,6 +120,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [AssignmentController::class, 'show']);
         Route::post('/{id}', [AssignmentController::class, 'update']); // POST vì có file upload
         Route::delete('/{id}', [AssignmentController::class, 'destroy']);
+        Route::get('/class/{classId}/search', [AssignmentController::class, 'search']);
 
         // Quản lý bài nộp & chấm điểm
         Route::get('/{assignmentId}/submissions', [AssignmentController::class, 'getSubmissions']);

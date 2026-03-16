@@ -95,4 +95,14 @@ class LessonController extends Controller
     $result = $this->lessonService->regenerateQuiz($id, auth()->id(), $questionCount);
     return response()->json($result['data'], $result['status']);
   }
+
+  /**
+   * Tìm kiếm bài học trong lớp
+   */
+  public function search(int $classId, Request $request): JsonResponse
+  {
+    $query = $request->input('q', '');
+    $result = $this->lessonService->searchLessons($classId, $query, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
 }

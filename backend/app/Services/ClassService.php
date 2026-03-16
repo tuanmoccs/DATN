@@ -559,4 +559,50 @@ class ClassService
       ];
     }
   }
+
+  /**
+   * Tìm kiếm học sinh trong lớp
+   */
+  public function searchStudents(int $classId, string $query, int $teacherId): array
+  {
+    try {
+      $class = $this->classRepository->findOrFail($classId);
+
+      // Kiểm tra quyền
+      if ($class->teacher_id !== $teacherId) {
+        return [
+          'status' => 403,
+          'data' => [
+            'success' => false,
+            'message' => 'Bạn không có quyền xem lớp này',
+          ],
+        ];
+      }
+
+      // Lấy enrollment với user, filter theo tên
+      $enrollments = $class->enrollment()
+        ->with('user')
+        ->whereHas('user', function ($q) use ($query) {
+          $q->where('name', 'like', "%{$query}%")
+            ->orWhere('email', 'like', "%{$query}%");
+        })
+        ->get();
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'data' => $enrollments,
+        ],
+      ];
+    } catch (\Exception $e) {
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Lỗi khi tìm kiếm học sinh: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
 }

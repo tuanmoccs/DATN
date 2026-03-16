@@ -37,16 +37,76 @@
             <span v-if="content.file_size"><i class="fas fa-weight mr-1"></i>{{ formatSize(content.file_size) }}</span>
             <span v-if="content.mime_type"><i class="fas fa-tag mr-1"></i>{{ content.mime_type }}</span>
           </div>
+
+          <div class="mt-3">
+            <button class="text-sm text-blue-600 hover:text-blue-700 font-medium" @click="openDetail(content)">
+              <i class="fas fa-eye mr-1"></i>
+              View detail
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="selectedContent" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/50" @click="selectedContent = null"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+          <div class="sticky top-0 z-10 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <div>
+              <h4 class="text-lg font-semibold text-gray-800">Content Detail</h4>
+              <p class="text-xs text-gray-500 uppercase mt-1">{{ selectedContent.content_type }}</p>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600" @click="selectedContent = null">
+              <i class="fas fa-times text-lg"></i>
+            </button>
+          </div>
+
+          <div class="p-6 overflow-y-auto max-h-[calc(90vh-78px)]">
+            <div v-if="selectedContent.content_text" class="mb-5">
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">Text Content</h5>
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 whitespace-pre-wrap text-sm text-gray-700">
+                {{ selectedContent.content_text }}
+              </div>
+            </div>
+
+            <div v-if="selectedContent.file_path" class="space-y-2 text-sm">
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">File Information</h5>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div class="text-xs text-gray-500 mb-1">File name</div>
+                  <div class="text-gray-700 break-all">{{ selectedContent.file_path.split('/').pop() }}</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3" v-if="selectedContent.file_size">
+                  <div class="text-xs text-gray-500 mb-1">File size</div>
+                  <div class="text-gray-700">{{ formatSize(selectedContent.file_size) }}</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:col-span-2"
+                  v-if="selectedContent.mime_type">
+                  <div class="text-xs text-gray-500 mb-1">MIME type</div>
+                  <div class="text-gray-700">{{ selectedContent.mime_type }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
 defineProps({
   contents: { type: Array, default: () => [] },
 })
+
+const selectedContent = ref(null)
+
+const openDetail = (content) => {
+  selectedContent.value = content
+}
 
 const iconClass = (type) => {
   const map = {

@@ -85,4 +85,18 @@ export default ($axios) => ({
   deleteQuestion(quizId, questionId) {
     return $axios.$delete(`/teacher/quizzes/${quizId}/questions/${questionId}`)
   },
+
+  // Export quiz as PDF
+  exportQuizPDF(quizId) {
+    return $axios.$get(`/teacher/quizzes/${quizId}/export-pdf`, {
+      responseType: 'blob',
+      timeout: 60000,
+    })
+  },
+
+  searchLessons(classId, query) {
+    return $axios.$get(`/teacher/lessons/class/${classId}/search`, {
+      params: { q: query },
+    })
+  },
 })

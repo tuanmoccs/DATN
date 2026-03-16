@@ -7,6 +7,7 @@ use App\Http\Requests\Quiz\UpdateQuizRequest;
 use App\Http\Requests\Quiz\UpdateQuizQuestionRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class QuizController extends Controller
 {
@@ -93,5 +94,32 @@ class QuizController extends Controller
   {
     $result = $this->quizService->publishQuiz($id, $request->all(), auth()->id());
     return response()->json($result['data'], $result['status']);
+  }
+
+  /**
+   * Export quiz as PDF
+   */
+  public function exportPDF(int $id)
+  {
+    try {
+      $quiz = $this->quizService->getQuizDetail($id, auth()->id());
+
+      if ($quiz['status'] !== 200) {
+        return response()->json($quiz['data'], $quiz['status']);
+      }
+
+      $quizData = $quiz['data']['data'];
+
+      // Generate PDF using DomPDF
+      $pdf = Pdf::loadView('pdf.quiz-exam', ['quiz' => $quizData])
+        ->setPaper('a4', 'portrait');
+
+      return $pdf->download($quizData->title . '-exam.pdf');
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Lỗi khi xuất PDF: ' . $e->getMessage(),
+      ], 500);
+    }
   }
 }

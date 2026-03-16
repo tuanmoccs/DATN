@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Assignment;
 use App\Models\AssignmentFile;
 use App\Models\AssignmentSubmission;
+use App\Models\Classz;
 use App\Models\Grading;
 use App\Models\SubmissionAttachment;
 use App\Repositories\Contracts\AssignmentRepositoryInterface;
@@ -717,5 +719,49 @@ class AssignmentService
     }
 
     return implode("\n\n", $contentParts);
+  }
+
+  /**
+   * Tìm kiếm bài tập theo tên trong một lớp học
+   */
+  public function searchAssignments(int $classId, string $query, int $teacherId): array
+  {
+    try {
+      $class = Classz::find($classId);
+
+      if (!$class || $class->teacher_id !== $teacherId) {
+        return [
+          'status' => 403,
+          'data' => ['success' => false, 'message' => 'Bạn không có quyền truy cập lớp này'],
+        ];
+      }
+
+      $assignments = Assignment::where('class_id', $classId)
+        ->where('title', 'like', "%{$query}%")
+        ->with(['files', 'creator', 'submissions.student'])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+      // Thêm thống kê cho mỗi bài tập
+      $assignments->each(function ($assignment) {
+        $assignment->submission_count = $assignment->submissions->count();
+        $assignment->graded_count = $assignment->submissions->filter(fn($s) => $s->status === 'graded')->count();
+      });
+
+      return [
+        'status' => 200,
+        'data' => ['success' => true, 'data' => $assignments],
+      ];
+    } catch (\Exception $e) {
+      \Illuminate\Support\Facades\Log::error('Assignment search failed', [
+        'class_id' => $classId,
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'status' => 500,
+        'data' => ['success' => false, 'message' => 'Lỗi khi tìm kiếm bài tập'],
+      ];
+    }
   }
 }

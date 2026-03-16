@@ -69,7 +69,7 @@ const menuItems = [
   { icon: 'fas fa-chart-line', label: 'Dashboard', path: '/teacher/dashboard' },
   { icon: 'fas fa-book', label: 'Classes', path: '/teacher/classes' },
   { icon: 'fas fa-file-alt', label: 'Lessons', path: '/teacher/lessons' },
-  { icon: 'fas fa-question-circle', label: 'Quizzes', path: '/teacher/quizzes' },
+  // { icon: 'fas fa-question-circle', label: 'Quizzes', path: '/teacher/quizzes' },
   { icon: 'fas fa-tasks', label: 'Assignments', path: '/teacher/assignments' },
   { icon: 'fas fa-user-graduate', label: 'Students', path: '/teacher/students' },
   { icon: 'fas fa-chart-bar', label: 'Reports', path: '/teacher/reports' },
