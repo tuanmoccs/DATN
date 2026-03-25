@@ -98,7 +98,7 @@ const LessonDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D47A1" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -118,7 +118,7 @@ const LessonDetailScreen: React.FC = () => {
       <ScrollView
         style={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchLesson(true)} colors={['#4F46E5']} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchLesson(true)} colors={['#0D47A1']} />
         }
         showsVerticalScrollIndicator={false}>
 
@@ -280,17 +280,16 @@ const LessonDetailScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F3F4F6'},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6'},
-  errorContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 40},
+  container: {flex: 1, backgroundColor: '#F0F4F8'},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F4F8'},
+  errorContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F4F8', padding: 40},
   errorIcon: {fontSize: 48, marginBottom: 16},
-  errorText: {fontSize: 16, color: '#6B7280', marginBottom: 20},
-  retryBtn: {backgroundColor: '#4F46E5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10},
+  errorText: {fontSize: 16, color: '#64748B', marginBottom: 20},
+  retryBtn: {backgroundColor: '#0D47A1', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 6},
   retryBtnText: {color: '#FFF', fontWeight: '600'},
 
-  // Header
   header: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#0D47A1',
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 12,
@@ -298,83 +297,79 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   backBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 36, height: 36, borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   backIcon: {fontSize: 20, color: '#FFF', fontWeight: '700'},
   headerContent: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10},
-  headerTitle: {fontSize: 18, fontWeight: '700', color: '#FFF', flex: 1},
-  completedBadge: {backgroundColor: '#10B981', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12},
-  completedBadgeText: {color: '#FFF', fontSize: 12, fontWeight: '600'},
+  headerTitle: {fontSize: 17, fontWeight: '700', color: '#FFF', flex: 1},
+  completedBadge: {backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4},
+  completedBadgeText: {color: '#FFF', fontSize: 11, fontWeight: '600'},
 
   content: {flex: 1},
 
-  // Progress Card
   progressCard: {
-    backgroundColor: '#FFF', margin: 16, borderRadius: 16, padding: 20,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    backgroundColor: '#FFF', margin: 16, borderRadius: 8, padding: 18,
+    shadowColor: '#0D47A1', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  progressTitle: {fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 12},
-  progressBarBg: {height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden'},
-  progressBarFill: {height: '100%', backgroundColor: '#4F46E5', borderRadius: 4},
+  progressTitle: {fontSize: 15, fontWeight: '700', color: '#0F172A', marginBottom: 12},
+  progressBarBg: {height: 6, backgroundColor: '#E2E8F0', borderRadius: 3, overflow: 'hidden'},
+  progressBarFill: {height: '100%', backgroundColor: '#0D47A1', borderRadius: 3},
   progressSteps: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16},
   progressStep: {alignItems: 'center'},
-  progressStepLine: {height: 2, width: 40, backgroundColor: '#E5E7EB', marginHorizontal: 4},
+  progressStepLine: {height: 2, width: 40, backgroundColor: '#E2E8F0', marginHorizontal: 4},
   stepDot: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', marginBottom: 4,
+    width: 30, height: 30, borderRadius: 6,
+    backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', marginBottom: 4,
   },
   stepDotDone: {backgroundColor: '#10B981'},
-  stepDotText: {fontSize: 13, fontWeight: '700', color: '#FFF'},
-  stepLabel: {fontSize: 11, color: '#6B7280', fontWeight: '500'},
+  stepDotText: {fontSize: 12, fontWeight: '700', color: '#FFF'},
+  stepLabel: {fontSize: 10, color: '#64748B', fontWeight: '500'},
 
-  // Card
   card: {
-    backgroundColor: '#FFF', marginHorizontal: 16, marginBottom: 12, borderRadius: 16, padding: 16,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    backgroundColor: '#FFF', marginHorizontal: 16, marginBottom: 10, borderRadius: 8, padding: 16,
+    shadowColor: '#0D47A1', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-  cardTitle: {fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 10},
-  cardText: {fontSize: 14, color: '#4B5563', lineHeight: 22},
-  slideInfo: {fontSize: 13, color: '#6B7280', marginBottom: 12},
-  slidePreview: {width: '100%', height: 160, borderRadius: 10, marginBottom: 12, backgroundColor: '#F3F4F6'},
-  emptyText: {fontSize: 14, color: '#9CA3AF', fontStyle: 'italic'},
+  cardTitle: {fontSize: 15, fontWeight: '700', color: '#0F172A', marginBottom: 10},
+  cardText: {fontSize: 13, color: '#475569', lineHeight: 20},
+  slideInfo: {fontSize: 12, color: '#64748B', marginBottom: 10},
+  slidePreview: {width: '100%', height: 160, borderRadius: 6, marginBottom: 12, backgroundColor: '#E2E8F0'},
+  emptyText: {fontSize: 13, color: '#94A3B8', fontStyle: 'italic'},
 
-  // Buttons
   primaryBtn: {
-    backgroundColor: '#4F46E5', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4,
+    backgroundColor: '#0D47A1', borderRadius: 6, paddingVertical: 13, alignItems: 'center', marginTop: 4,
   },
   primaryBtnDone: {backgroundColor: '#10B981'},
-  primaryBtnText: {color: '#FFF', fontSize: 15, fontWeight: '600'},
+  primaryBtnText: {color: '#FFF', fontSize: 14, fontWeight: '600'},
 
-  // Lock
   lockBanner: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7',
-    padding: 10, borderRadius: 10, marginBottom: 12, gap: 8,
+    padding: 10, borderRadius: 4, marginBottom: 12, gap: 8,
+    borderLeftWidth: 3, borderLeftColor: '#F59E0B',
   },
-  lockIcon: {fontSize: 18},
-  lockText: {fontSize: 13, color: '#92400E', fontWeight: '500'},
+  lockIcon: {fontSize: 16},
+  lockText: {fontSize: 12, color: '#92400E', fontWeight: '500'},
 
-  // Quiz Card
   quizCard: {
-    backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: '#F8FAFC', borderRadius: 6, padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: '#E2E8F0',
   },
   quizHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8},
-  quizTitle: {fontSize: 15, fontWeight: '600', color: '#1F2937', flex: 1},
-  scoreBadge: {paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10},
-  scoreBadgePass: {backgroundColor: '#D1FAE5'},
-  scoreBadgeFail: {backgroundColor: '#FEE2E2'},
-  scoreBadgeText: {fontSize: 13, fontWeight: '700'},
-  quizMeta: {flexDirection: 'row', gap: 14, marginBottom: 6},
-  quizMetaText: {fontSize: 13, color: '#6B7280'},
-  quizAttemptInfo: {fontSize: 12, color: '#9CA3AF', marginBottom: 8},
+  quizTitle: {fontSize: 14, fontWeight: '600', color: '#0F172A', flex: 1},
+  scoreBadge: {paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4},
+  scoreBadgePass: {backgroundColor: '#ECFDF5'},
+  scoreBadgeFail: {backgroundColor: '#FEF2F2'},
+  scoreBadgeText: {fontSize: 12, fontWeight: '700'},
+  quizMeta: {flexDirection: 'row', gap: 12, marginBottom: 6},
+  quizMetaText: {fontSize: 12, color: '#64748B'},
+  quizAttemptInfo: {fontSize: 11, color: '#94A3B8', marginBottom: 8},
   quizBtn: {
-    backgroundColor: '#4F46E5', borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+    backgroundColor: '#0D47A1', borderRadius: 6, paddingVertical: 11, alignItems: 'center',
   },
-  quizBtnDisabled: {backgroundColor: '#D1D5DB'},
-  quizBtnText: {color: '#FFF', fontSize: 14, fontWeight: '600'},
-  quizBtnTextDisabled: {color: '#9CA3AF'},
+  quizBtnDisabled: {backgroundColor: '#CBD5E1'},
+  quizBtnText: {color: '#FFF', fontSize: 13, fontWeight: '600'},
+  quizBtnTextDisabled: {color: '#94A3B8'},
 });
 
 export default LessonDetailScreen;

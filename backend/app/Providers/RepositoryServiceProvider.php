@@ -15,6 +15,7 @@ use App\Repositories\Contracts\QuizRepositoryInterface;
 use App\Repositories\Contracts\PresentationRepositoryInterface;
 use App\Repositories\Contracts\AssignmentRepositoryInterface;
 use App\Repositories\Contracts\AssignmentSubmissionRepositoryInterface;
+use App\Repositories\Contracts\LessonPlanRepositoryInterface;
 
 // Repository Implementations
 use App\Repositories\UserRepository;
@@ -26,6 +27,7 @@ use App\Repositories\QuizRepository;
 use App\Repositories\PresentationRepository;
 use App\Repositories\AssignmentRepository;
 use App\Repositories\AssignmentSubmissionRepository;
+use App\Repositories\LessonPlanRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -42,6 +44,7 @@ class RepositoryServiceProvider extends ServiceProvider
     PresentationRepositoryInterface::class => PresentationRepository::class,
     AssignmentRepositoryInterface::class => AssignmentRepository::class,
     AssignmentSubmissionRepositoryInterface::class => AssignmentSubmissionRepository::class,
+    LessonPlanRepositoryInterface::class => LessonPlanRepository::class,
   ];
 
   /**

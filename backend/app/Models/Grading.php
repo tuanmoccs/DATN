@@ -10,6 +10,8 @@ class Grading extends Model
 {
   use HasFactory;
 
+  protected $table = 'grading';
+
   protected $fillable = [
     'submission_id',
     'graded_by',

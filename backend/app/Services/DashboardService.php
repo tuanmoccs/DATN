@@ -135,62 +135,81 @@ class DashboardService
    */
   private function getTopAssignmentStudents(array $classIds): array
   {
-    if (empty($classIds)) {
-      return [];
-    }
+      if (empty($classIds)) {
+          return [];
+      }
 
-    $assignmentIds = Assignment::whereIn('class_id', $classIds)->pluck('id');
+      $assignmentIds = Assignment::whereIn('class_id', $classIds)->pluck('id');
 
-    if ($assignmentIds->isEmpty()) {
-      return [];
-    }
+      if ($assignmentIds->isEmpty()) {
+          return [];
+      }
 
-    $submissionIds = AssignmentSubmission::whereIn('assignment_id', $assignmentIds)
-      ->pluck('id');
-
-    if ($submissionIds->isEmpty()) {
-      return [];
-    }
-
-    return Grading::select(
-      'gradings.submission_id',
-      'assignment_submissions.student_id',
-      DB::raw('MAX(gradings.percentage) as best_score'),
-      DB::raw('ROUND(AVG(gradings.percentage), 2) as avg_score')
-    )
-      ->join('assignment_submissions', 'gradings.submission_id', '=', 'assignment_submissions.id')
-      ->whereIn('gradings.submission_id', $submissionIds)
-      ->whereNotNull('gradings.score')
-      ->groupBy('assignment_submissions.student_id')
-      ->orderByDesc('best_score')
-      ->limit(10)
-      ->get()
-      ->map(function ($grading) use ($assignmentIds) {
-        $student = \App\Models\User::find($grading->student_id);
-        if (!$student) return null;
-
-        $bestSubmission = AssignmentSubmission::where('student_id', $grading->student_id)
-          ->whereIn('assignment_id', $assignmentIds)
-          ->whereHas('grading', fn($q) => $q->whereNotNull('score'))
-          ->with(['assignment:id,title', 'grading'])
-          ->orderByDesc(
-            Grading::select('percentage')
-              ->whereColumn('submission_id', 'assignment_submissions.id')
-              ->limit(1)
+      // Query leaderboard
+      $topStudents = DB::table('grading as g')
+          ->join('assignment_submissions as s', 'g.submission_id', '=', 's.id')
+          ->whereIn('s.assignment_id', $assignmentIds)
+          ->whereNotNull('g.score')
+          ->select(
+              's.student_id',
+              DB::raw('MAX(g.percentage) as best_score'),
+              DB::raw('ROUND(AVG(g.percentage), 2) as avg_score')
           )
-          ->first();
+          ->groupBy('s.student_id')
+          ->orderByDesc('best_score')
+          ->limit(10)
+          ->get();
 
-        return [
-          'student' => [
-            'id' => $student->id,
-            'name' => $student->name,
-            'email' => $student->email,
-            'avatar' => $student->avatar,
-          ],
-          'best_score' => round((float) $grading->best_score, 2),
-          'avg_score' => round((float) $grading->avg_score, 2),
-          'assignment_title' => $bestSubmission?->assignment?->title,
-        ];
+      if ($topStudents->isEmpty()) {
+          return [];
+      }
+
+      $studentIds = $topStudents->pluck('student_id');
+
+      // Load user 1 lần
+      $students = DB::table('users')
+          ->whereIn('id', $studentIds)
+          ->select('id', 'name', 'email', 'avatar')
+          ->get()
+          ->keyBy('id');
+
+      // Lấy bài có điểm cao nhất của mỗi student
+      $bestSubmissions = DB::table('assignment_submissions as s')
+          ->join('grading as g', 's.id', '=', 'g.submission_id')
+          ->join('assignments as a', 's.assignment_id', '=', 'a.id')
+          ->whereIn('s.assignment_id', $assignmentIds)
+          ->whereIn('s.student_id', $studentIds)
+          ->whereNotNull('g.score')
+          ->select(
+              's.student_id',
+              'a.title as assignment_title',
+              DB::raw('MAX(g.percentage) as max_percentage')
+          )
+          ->groupBy('s.student_id', 'a.title')
+          ->get()
+          ->groupBy('student_id')
+          ->map(function ($items) {
+              return $items->sortByDesc('max_percentage')->first();
+          });
+
+      //Map kết quả
+      return $topStudents->map(function ($item) use ($students, $bestSubmissions) {
+          $student = $students[$item->student_id] ?? null;
+          if (!$student) return null;
+
+          $bestSubmission = $bestSubmissions[$item->student_id] ?? null;
+
+          return [
+              'student' => [
+                  'id' => $student->id,
+                  'name' => $student->name,
+                  'email' => $student->email,
+                  'avatar' => $student->avatar,
+              ],
+              'best_score' => round((float) $item->best_score, 2),
+              'avg_score' => round((float) $item->avg_score, 2),
+              'assignment_title' => $bestSubmission->assignment_title ?? null,
+          ];
       })
       ->filter()
       ->values()

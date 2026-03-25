@@ -58,6 +58,17 @@ const router = createRouter({
           props: true,
         },
         {
+          path: 'lesson-plans',
+          name: 'TeacherLessonPlans',
+          component: () => import('@/pages/teacher/LessonPlansPage.vue'),
+        },
+        {
+          path: 'lesson-plans/:id',
+          name: 'TeacherLessonPlanEditor',
+          component: () => import('@/pages/teacher/LessonPlanEditorPage.vue'),
+          props: true,
+        },
+        {
           path: 'assignments',
           name: 'TeacherAssignments',
           component: () => import('@/pages/teacher/AssignmentsPage.vue'),

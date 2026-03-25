@@ -99,7 +99,7 @@ const SlideViewerScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
+      <StatusBar barStyle="light-content" backgroundColor="#0A1929" />
 
       {/* Top Bar */}
       <View style={styles.topBar}>
@@ -186,7 +186,7 @@ const SlideViewerScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#1E1B4B'},
+  container: {flex: 1, backgroundColor: '#0A1929'},
 
   // Top Bar
   topBar: {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 32, height: 32, borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -204,13 +204,13 @@ const styles = StyleSheet.create({
   progressTopBar: {
     flex: 1, height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden',
   },
-  progressTopFill: {height: '100%', backgroundColor: '#818CF8', borderRadius: 2},
+  progressTopFill: {height: '100%', backgroundColor: '#42A5F5', borderRadius: 2},
 
   // Slide
   slideContainer: {
-    flex: 1, margin: 12, borderRadius: 20, overflow: 'hidden',
+    flex: 1, margin: 12, borderRadius: 8, overflow: 'hidden',
   },
-  layoutTitle: {backgroundColor: '#4F46E5'},
+  layoutTitle: {backgroundColor: '#0D47A1'},
   layoutContent: {backgroundColor: '#FFFFFF'},
   layoutImage: {backgroundColor: '#FFFFFF'},
   layoutTwoCol: {backgroundColor: '#FFFFFF'},
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   slideScroll: {padding: 24, paddingBottom: 40},
 
   slideTitle: {
-    fontSize: 22, fontWeight: '800', color: '#1F2937',
+    fontSize: 22, fontWeight: '800', color: '#0F172A',
     marginBottom: 16, lineHeight: 30,
   },
   slideTitleMain: {
@@ -226,24 +226,24 @@ const styles = StyleSheet.create({
   },
 
   slideContentArea: {gap: 6},
-  slideText: {fontSize: 16, color: '#374151', lineHeight: 26},
+  slideText: {fontSize: 16, color: '#334155', lineHeight: 26},
   bulletText: {paddingLeft: 8},
 
   slideImageFull: {
-    width: '100%', height: 220, borderRadius: 12,
-    marginBottom: 16, backgroundColor: '#F3F4F6',
+    width: '100%', height: 220, borderRadius: 6,
+    marginBottom: 16, backgroundColor: '#F0F4F8',
   },
   slideImageHalf: {
-    width: '100%', height: 160, borderRadius: 12,
-    marginBottom: 16, backgroundColor: '#F3F4F6',
+    width: '100%', height: 160, borderRadius: 6,
+    marginBottom: 16, backgroundColor: '#F0F4F8',
   },
 
   notesBox: {
-    marginTop: 20, padding: 14, backgroundColor: '#F3F4F6',
-    borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#818CF8',
+    marginTop: 20, padding: 14, backgroundColor: '#F0F4F8',
+    borderRadius: 6, borderLeftWidth: 3, borderLeftColor: '#1565C0',
   },
-  notesLabel: {fontSize: 13, fontWeight: '700', color: '#4F46E5', marginBottom: 6},
-  notesText: {fontSize: 13, color: '#6B7280', lineHeight: 20},
+  notesLabel: {fontSize: 13, fontWeight: '700', color: '#0D47A1', marginBottom: 6},
+  notesText: {fontSize: 13, color: '#64748B', lineHeight: 20},
 
   // Navigation
   navBar: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12, gap: 10,
   },
   navBtn: {
-    paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10,
+    paddingHorizontal: 18, paddingVertical: 10, borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
   navBtnDisabled: {opacity: 0.3},
@@ -262,9 +262,9 @@ const styles = StyleSheet.create({
 
   dots: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4},
   dot: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  dotActive: {width: 20, backgroundColor: '#818CF8'},
+  dotActive: {width: 20, backgroundColor: '#42A5F5'},
   dotViewed: {backgroundColor: 'rgba(255,255,255,0.5)'},
 });
 

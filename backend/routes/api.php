@@ -7,6 +7,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\StudentLessonController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\LessonPlanController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -135,5 +136,20 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('student/assignments')->group(function () {
         Route::get('/class/{classId}', [AssignmentController::class, 'studentAssignments']);
         Route::post('/{assignmentId}/submit', [AssignmentController::class, 'submitAssignment']);
+    });
+
+    // ==========================================
+    // Teacher - Soạn Giáo án
+    // ==========================================
+    Route::prefix('teacher/lesson-plans')->group(function () {
+        Route::get('/', [LessonPlanController::class, 'index']);
+        Route::post('/', [LessonPlanController::class, 'store']);
+        Route::get('/search', [LessonPlanController::class, 'search']);
+        Route::get('/{id}', [LessonPlanController::class, 'show']);
+        Route::put('/{id}', [LessonPlanController::class, 'update']);
+        Route::delete('/{id}', [LessonPlanController::class, 'destroy']);
+        Route::post('/{id}/upload-reference', [LessonPlanController::class, 'uploadReference']);
+        Route::post('/{id}/upload-reference-text', [LessonPlanController::class, 'uploadReferenceText']);
+        Route::post('/{id}/ai-suggest', [LessonPlanController::class, 'aiSuggest']);
     });
 });

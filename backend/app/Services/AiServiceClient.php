@@ -154,6 +154,37 @@ class AiServiceClient
     }
   }
 
+  /**
+   * Gọi AI service để lấy gợi ý autocomplete cho giáo án
+   */
+  public function getAutocompleteSuggestion(string $text, ?int $lessonId = null): array
+  {
+    try {
+      $payload = ['text' => $text];
+      if ($lessonId) {
+        $payload['lesson_id'] = $lessonId;
+      }
+
+      $response = Http::timeout(15)
+        ->withHeaders($this->headers())
+        ->post("{$this->baseUrl}/api/ai/suggest", $payload);
+
+      if (!$response->successful()) {
+        Log::warning('AI Service: autocomplete suggestion failed', [
+          'status' => $response->status(),
+        ]);
+        return ['suggestion' => ''];
+      }
+
+      return $response->json();
+    } catch (\Exception $e) {
+      Log::warning('AI Service: autocomplete request failed', [
+        'error' => $e->getMessage(),
+      ]);
+      return ['suggestion' => ''];
+    }
+  }
+
   private function headers(): array
   {
     return [

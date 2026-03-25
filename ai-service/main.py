@@ -10,6 +10,7 @@ from app.api.documents import router as documents_router
 from app.api.slides import router as slides_router
 from app.api.quizzes import router as quizzes_router
 from app.api.chat import router as chat_router
+from app.api.autocomplete import router as autocomplete_router
 from app.api.health import router as health_router
 
 
@@ -59,6 +60,12 @@ app.include_router(
     chat_router,
     prefix="/api/chat",
     tags=["Chat"],
+    dependencies=[Depends(verify_api_secret)],
+)
+app.include_router(
+    autocomplete_router,
+    prefix="/api/ai",
+    tags=["Autocomplete"],
     dependencies=[Depends(verify_api_secret)],
 )
 

@@ -164,7 +164,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#0D47A1',
   },
   scrollContent: {
     flexGrow: 1,
@@ -182,40 +182,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.7)',
   },
   form: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   inputGroup: {
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: '#334155',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
   },
   inputError: {
     borderColor: '#EF4444',
@@ -226,9 +228,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 13,
     fontSize: 15,
-    color: '#1F2937',
+    color: '#0F172A',
   },
   eyeButton: {
     padding: 4,
@@ -237,17 +239,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#EF4444',
     marginTop: 4,
+    fontWeight: '500',
   },
   errorBanner: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 6,
+    padding: 12,
     marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#EF4444',
   },
   errorBannerText: {
     fontSize: 13,
@@ -255,19 +260,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   submitButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#0D47A1',
+    borderRadius: 6,
+    paddingVertical: 15,
     alignItems: 'center',
     marginTop: 8,
   },
   submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: '#94A3B8',
   },
   submitButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   footer: {
     flexDirection: 'row',
@@ -276,12 +282,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: 'rgba(255,255,255,0.7)',
   },
   linkText: {
     fontSize: 14,
-    color: '#2563EB',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });
 

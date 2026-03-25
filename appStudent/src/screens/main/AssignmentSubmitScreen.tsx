@@ -189,7 +189,7 @@ const AssignmentSubmitScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D47A1" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -341,10 +341,10 @@ const AssignmentSubmitScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
   },
   header: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0D47A1',
     paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
   },
   infoBanner: {
     flexDirection: 'row',
-    backgroundColor: '#DBEAFE',
-    borderRadius: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 6,
     padding: 12,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderLeftWidth: 3,
+    borderLeftColor: '#0D47A1',
   },
   infoBannerIcon: {
     fontSize: 20,
@@ -402,34 +402,34 @@ const styles = StyleSheet.create({
   infoBannerTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E40AF',
+    color: '#0D47A1',
     marginBottom: 4,
   },
   infoBannerText: {
     fontSize: 13,
-    color: '#1E40AF',
+    color: '#1565C0',
     lineHeight: 20,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: '#0D47A1',
     shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 2,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     marginBottom: 12,
   },
   filesList: {
@@ -439,11 +439,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
+    backgroundColor: '#F0F4F8',
+    borderRadius: 6,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
   },
   selectedFileIcon: {
     fontSize: 24,
@@ -455,17 +455,17 @@ const styles = StyleSheet.create({
   selectedFileName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
+    color: '#334155',
   },
   selectedFileSize: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     marginTop: 2,
   },
   removeFileButton: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 6,
     backgroundColor: '#FEE2E2',
     justifyContent: 'center',
     alignItems: 'center',
@@ -484,10 +484,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     marginHorizontal: 4,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 10,
+    backgroundColor: '#F0F4F8',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     borderStyle: 'dashed',
   },
   addFileButtonIcon: {
@@ -496,23 +496,23 @@ const styles = StyleSheet.create({
   },
   addFileButtonText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
     fontWeight: '500',
   },
   textInput: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
+    backgroundColor: '#F0F4F8',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
     padding: 12,
     fontSize: 14,
-    color: '#374151',
+    color: '#334155',
     minHeight: 200,
     lineHeight: 22,
   },
   charCount: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     textAlign: 'right',
     marginTop: 6,
   },
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#E2E8F0',
     ...Platform.select({
       ios: {paddingBottom: 28},
       android: {paddingBottom: 12},
@@ -539,15 +539,15 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
   },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0D47A1',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 6,
   },
   submitBtnDisabled: {
     opacity: 0.6,

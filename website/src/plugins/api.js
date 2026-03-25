@@ -4,6 +4,7 @@ import classService from '../services/class'
 import lessonService from '../services/lesson'
 import assignmentService from '../services/assignment'
 import dashboardService from '../services/dashboard'
+import lessonPlanService from '../services/lessonPlan'
 
 
 export const API_KEY = Symbol('api')
@@ -15,6 +16,7 @@ export const createApi = ($axios) => {
     lesson: lessonService($axios),
     assignment: assignmentService($axios),
     dashboard: dashboardService($axios),
+    lessonPlan: lessonPlanService($axios),
   }
 }
 

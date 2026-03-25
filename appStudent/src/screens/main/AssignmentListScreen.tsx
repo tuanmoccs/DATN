@@ -140,7 +140,7 @@ const AssignmentListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D47A1" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -264,16 +264,16 @@ const AssignmentListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
   },
   header: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0D47A1',
     paddingTop: 44,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -281,10 +281,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -298,13 +298,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
   content: {
@@ -320,26 +320,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#374151',
+    color: '#0F172A',
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
   },
   assignmentCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
+    marginBottom: 10,
+    shadowColor: '#0D47A1',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1565C0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -348,43 +350,43 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardNumberBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
+    width: 26,
+    height: 26,
+    borderRadius: 4,
+    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardNumberText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#0D47A1',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   statusIcon: {
-    fontSize: 12,
+    fontSize: 11,
     marginRight: 4,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   assignmentTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 6,
+    color: '#0F172A',
+    marginBottom: 4,
   },
   assignmentDesc: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 20,
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
     marginBottom: 10,
   },
   cardFooter: {
@@ -393,22 +395,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F1F5F9',
   },
   footerItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   footerIcon: {
-    fontSize: 13,
+    fontSize: 12,
     marginRight: 4,
   },
   footerText: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 11,
+    color: '#64748B',
   },
   daysRemaining: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   daysOverdue: {
@@ -423,8 +425,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   metaText: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#94A3B8',
   },
   bottomSpace: {
     height: 40,

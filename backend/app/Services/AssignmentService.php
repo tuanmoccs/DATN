@@ -638,6 +638,7 @@ class AssignmentService
     ]);
 
     $grading->ai_status = 'processing';
+    $grading->graded_by = null; // Chưa có người chấm, để null
     $grading->save();
 
     try {

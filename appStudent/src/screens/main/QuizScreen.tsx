@@ -150,7 +150,7 @@ const QuizScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D47A1" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -275,30 +275,30 @@ const QuizScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9FAFB'},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB', gap: 12},
-  loadingText: {fontSize: 15, color: '#6B7280'},
+  container: {flex: 1, backgroundColor: '#F0F4F8'},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F4F8', gap: 12},
+  loadingText: {fontSize: 15, color: '#64748B'},
 
   // Header
   header: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 12,
+    backgroundColor: '#0D47A1', paddingHorizontal: 16, paddingVertical: 12,
+    gap: 12,
   },
-  headerClose: {fontSize: 20, color: '#6B7280', fontWeight: '600'},
+  headerClose: {fontSize: 20, color: 'rgba(255,255,255,0.8)', fontWeight: '600'},
   headerCenter: {flex: 1},
-  headerTitle: {fontSize: 16, fontWeight: '700', color: '#1F2937'},
-  headerSub: {fontSize: 12, color: '#9CA3AF', marginTop: 2},
+  headerTitle: {fontSize: 16, fontWeight: '700', color: '#FFFFFF'},
+  headerSub: {fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2},
   timerBadge: {
-    backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 4,
   },
   timerBadgeUrgent: {backgroundColor: '#FEE2E2'},
-  timerText: {fontSize: 14, fontWeight: '700', color: '#4F46E5'},
+  timerText: {fontSize: 14, fontWeight: '700', color: '#FFFFFF'},
   timerTextUrgent: {color: '#DC2626'},
 
   // Progress
-  progressBar: {height: 3, backgroundColor: '#E5E7EB'},
-  progressFill: {height: '100%', backgroundColor: '#4F46E5'},
+  progressBar: {height: 3, backgroundColor: '#E2E8F0'},
+  progressFill: {height: '100%', backgroundColor: '#0D47A1'},
 
   // Content
   content: {flex: 1},
@@ -306,55 +306,55 @@ const styles = StyleSheet.create({
 
   questionHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16},
   questionBadge: {
-    backgroundColor: '#EEF2FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: '#E3F2FD', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4,
   },
-  questionBadgeText: {fontSize: 13, fontWeight: '700', color: '#4F46E5'},
-  questionPoints: {fontSize: 13, fontWeight: '600', color: '#9CA3AF'},
+  questionBadgeText: {fontSize: 13, fontWeight: '700', color: '#0D47A1'},
+  questionPoints: {fontSize: 13, fontWeight: '600', color: '#94A3B8'},
 
-  questionText: {fontSize: 18, fontWeight: '600', color: '#1F2937', lineHeight: 28, marginBottom: 24},
+  questionText: {fontSize: 18, fontWeight: '600', color: '#0F172A', lineHeight: 28, marginBottom: 24},
 
   optionsContainer: {gap: 10},
   optionCard: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#FFF', borderRadius: 14, padding: 16,
-    borderWidth: 2, borderColor: '#E5E7EB',
+    backgroundColor: '#FFF', borderRadius: 6, padding: 16,
+    borderWidth: 2, borderColor: '#E2E8F0',
   },
-  optionCardSelected: {borderColor: '#4F46E5', backgroundColor: '#EEF2FF'},
+  optionCardSelected: {borderColor: '#0D47A1', backgroundColor: '#E3F2FD'},
   optionLetter: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 14,
+    width: 36, height: 36, borderRadius: 6,
+    backgroundColor: '#F0F4F8', justifyContent: 'center', alignItems: 'center', marginRight: 14,
   },
-  optionLetterSelected: {backgroundColor: '#4F46E5'},
-  optionLetterText: {fontSize: 15, fontWeight: '700', color: '#6B7280'},
+  optionLetterSelected: {backgroundColor: '#0D47A1'},
+  optionLetterText: {fontSize: 15, fontWeight: '700', color: '#64748B'},
   optionLetterTextSelected: {color: '#FFF'},
-  optionText: {flex: 1, fontSize: 15, color: '#374151', lineHeight: 22},
-  optionTextSelected: {color: '#1F2937', fontWeight: '500'},
+  optionText: {flex: 1, fontSize: 15, color: '#334155', lineHeight: 22},
+  optionTextSelected: {color: '#0F172A', fontWeight: '500'},
 
   // Bottom
   bottomBar: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 10,
-    borderTopWidth: 1, borderTopColor: '#E5E7EB', gap: 8,
+    borderTopWidth: 1, borderTopColor: '#E2E8F0', gap: 8,
   },
   bottomBtn: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 6,
+    backgroundColor: '#F0F4F8',
   },
   bottomBtnDisabled: {opacity: 0.4},
-  bottomBtnText: {fontSize: 14, fontWeight: '600', color: '#374151'},
-  bottomBtnTextDisabled: {color: '#9CA3AF'},
-  submitBtn: {backgroundColor: '#4F46E5'},
+  bottomBtnText: {fontSize: 14, fontWeight: '600', color: '#334155'},
+  bottomBtnTextDisabled: {color: '#94A3B8'},
+  submitBtn: {backgroundColor: '#0D47A1'},
   submitBtnText: {fontSize: 14, fontWeight: '700', color: '#FFF'},
 
   questionDots: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4},
   qDot: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center',
+    width: 28, height: 28, borderRadius: 6,
+    backgroundColor: '#F0F4F8', justifyContent: 'center', alignItems: 'center',
   },
-  qDotActive: {backgroundColor: '#EEF2FF', borderWidth: 2, borderColor: '#4F46E5'},
+  qDotActive: {backgroundColor: '#E3F2FD', borderWidth: 2, borderColor: '#0D47A1'},
   qDotAnswered: {backgroundColor: '#D1FAE5'},
-  qDotText: {fontSize: 12, fontWeight: '600', color: '#9CA3AF'},
-  qDotTextActive: {color: '#4F46E5'},
+  qDotText: {fontSize: 12, fontWeight: '600', color: '#94A3B8'},
+  qDotTextActive: {color: '#0D47A1'},
   qDotTextAnswered: {color: '#065F46'},
 });
 

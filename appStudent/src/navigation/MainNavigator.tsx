@@ -49,19 +49,20 @@ const MainTabs: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: {backgroundColor: '#FFFFFF', elevation: 1, shadowOpacity: 0.1},
-        headerTitleStyle: {fontWeight: '600', color: '#1F2937'},
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#9CA3AF',
+        headerStyle: {backgroundColor: '#0D47A1', elevation: 0, shadowOpacity: 0},
+        headerTitleStyle: {fontWeight: '600', color: '#FFFFFF'},
+        tabBarActiveTintColor: '#0D47A1',
+        tabBarInactiveTintColor: '#94A3B8',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
+          borderTopColor: '#E2E8F0',
           paddingBottom: 8,
           paddingTop: 8,
           height: 60,
         },
-        tabBarLabelStyle: {fontSize: 12, fontWeight: '500'},
+        tabBarLabelStyle: {fontSize: 11, fontWeight: '600'},
+        headerShown: false,
       }}>
       <Tab.Screen
         name="HomeTab"

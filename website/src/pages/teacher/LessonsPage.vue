@@ -59,8 +59,8 @@
         <i class="fas fa-file-alt text-5xl text-gray-300 mb-4"></i>
         <h3 class="text-lg font-semibold text-gray-600 mb-2">{{ searchQuery ? 'No lessons found' : 'No lessons yet' }}
         </h3>
-        <p class="text-gray-400 mb-6">{{ searchQuery ? 'Try searching with different keywords' : 'Create your first
-          lesson with AI - generated slides and quizzes' }}</p>
+        <p class="text-gray-400 mb-6">{{ searchQuery ? 'Try searching with different keywords' :
+          'Create your first lesson with AI - generated slides and quizzes' }}</p>
         <button v-if="!searchQuery"
           @click="$router.push({ name: 'TeacherLessonCreate', query: { class_id: selectedClassId } })"
           class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">

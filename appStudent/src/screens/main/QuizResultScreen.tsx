@@ -189,12 +189,12 @@ const QuizResultScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F3F4F6'},
-  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6'},
-  errorContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 40},
+  container: {flex: 1, backgroundColor: '#F0F4F8'},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F4F8'},
+  errorContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F4F8', padding: 40},
   errorIcon: {fontSize: 48, marginBottom: 16},
-  errorText: {fontSize: 16, color: '#6B7280', marginBottom: 20},
-  retryBtn: {backgroundColor: '#4F46E5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10},
+  errorText: {fontSize: 16, color: '#64748B', marginBottom: 20},
+  retryBtn: {backgroundColor: '#0D47A1', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 6},
   retryBtnText: {color: '#FFF', fontWeight: '600'},
 
   // Score Header
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   gradeEmoji: {fontSize: 48, marginBottom: 8},
   scoreTitle: {fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 20},
   scoreCircle: {
-    width: 120, height: 120, borderRadius: 60,
+    width: 120, height: 120, borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
@@ -223,54 +223,54 @@ const styles = StyleSheet.create({
   // Toggle
   toggleBtn: {
     backgroundColor: '#FFF', marginHorizontal: 16, marginTop: 16,
-    padding: 14, borderRadius: 12, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    padding: 14, borderRadius: 6, alignItems: 'center',
+    shadowColor: '#0D47A1', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
-  toggleBtnText: {fontSize: 14, fontWeight: '600', color: '#4F46E5'},
+  toggleBtnText: {fontSize: 14, fontWeight: '600', color: '#0D47A1'},
 
   // Question Cards
   questionCard: {
     backgroundColor: '#FFF', marginHorizontal: 16, marginTop: 12,
-    borderRadius: 14, padding: 16, borderLeftWidth: 4,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    borderRadius: 8, padding: 16, borderLeftWidth: 3,
+    shadowColor: '#0D47A1', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
   questionCorrect: {borderLeftColor: '#10B981'},
   questionWrong: {borderLeftColor: '#EF4444'},
   questionHeader: {flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8},
-  resultBadge: {width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center'},
+  resultBadge: {width: 26, height: 26, borderRadius: 4, justifyContent: 'center', alignItems: 'center'},
   badgeCorrect: {backgroundColor: '#D1FAE5'},
   badgeWrong: {backgroundColor: '#FEE2E2'},
   resultBadgeText: {fontSize: 14, fontWeight: '700'},
-  questionNum: {fontSize: 14, fontWeight: '600', color: '#1F2937', flex: 1},
-  questionScore: {fontSize: 13, fontWeight: '600', color: '#6B7280'},
-  questionText: {fontSize: 15, color: '#1F2937', lineHeight: 24, marginBottom: 12},
+  questionNum: {fontSize: 14, fontWeight: '600', color: '#0F172A', flex: 1},
+  questionScore: {fontSize: 13, fontWeight: '600', color: '#64748B'},
+  questionText: {fontSize: 15, color: '#0F172A', lineHeight: 24, marginBottom: 12},
 
   // Options
   optionRow: {
     flexDirection: 'row', alignItems: 'center',
-    padding: 10, borderRadius: 8, marginBottom: 4, gap: 8,
+    padding: 10, borderRadius: 4, marginBottom: 4, gap: 8,
   },
-  optionDefault: {backgroundColor: '#F9FAFB'},
+  optionDefault: {backgroundColor: '#F0F4F8'},
   optionCorrectBg: {backgroundColor: '#D1FAE5'},
   optionWrongBg: {backgroundColor: '#FEE2E2'},
   optionIndicator: {width: 20, fontSize: 14, fontWeight: '700', textAlign: 'center'},
-  optionText: {flex: 1, fontSize: 14, color: '#374151'},
+  optionText: {flex: 1, fontSize: 14, color: '#334155'},
   optionTextCorrect: {color: '#065F46', fontWeight: '500'},
   optionTextWrong: {color: '#991B1B', fontWeight: '500'},
 
   // Explanation
   explanationBox: {
-    marginTop: 8, padding: 12, backgroundColor: '#FEF3C7', borderRadius: 10,
+    marginTop: 8, padding: 12, backgroundColor: '#FEF3C7', borderRadius: 6,
   },
   explanationLabel: {fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 4},
   explanationText: {fontSize: 13, color: '#78350F', lineHeight: 20},
 
   // Bottom
   bottomBar: {
-    backgroundColor: '#FFF', padding: 16, borderTopWidth: 1, borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFF', padding: 16, borderTopWidth: 1, borderTopColor: '#E2E8F0',
   },
   backToLessonBtn: {
-    backgroundColor: '#4F46E5', borderRadius: 12, paddingVertical: 14, alignItems: 'center',
+    backgroundColor: '#0D47A1', borderRadius: 6, paddingVertical: 14, alignItems: 'center',
   },
   backToLessonText: {color: '#FFF', fontSize: 15, fontWeight: '600'},
 });
