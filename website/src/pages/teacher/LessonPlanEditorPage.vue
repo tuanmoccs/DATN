@@ -20,28 +20,27 @@
               <span v-if="plan.grade_level"><i class="fas fa-graduation-cap mr-1"></i>{{ plan.grade_level }}</span>
               <span :class="plan.status === 'completed' ? 'text-green-600' : 'text-yellow-600'">
                 <i class="fas fa-circle text-[6px] mr-1"></i>
-                {{ plan.status === 'completed' ? 'Hoàn thành' : 'Nháp' }}
+                {{ plan.status === 'completed' ? 'Completed' : 'Draft' }}
               </span>
             </div>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span v-if="autoSaveStatus" class="text-xs text-gray-400 mr-2">
-            <i :class="autoSaveStatus === 'saving' ? 'fas fa-spinner fa-spin' : 'fas fa-check'"
-              class="mr-1"></i>
-            {{ autoSaveStatus === 'saving' ? 'Đang lưu...' : 'Đã lưu' }}
+            <i :class="autoSaveStatus === 'saving' ? 'fas fa-spinner fa-spin' : 'fas fa-check'" class="mr-1"></i>
+            {{ autoSaveStatus === 'saving' ? 'Saving...' : 'Saved' }}
           </span>
           <button @click="exportPDF"
             class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-            <i class="fas fa-file-pdf"></i> Xuất PDF
+            <i class="fas fa-file-pdf"></i> Export PDF
           </button>
           <button @click="markCompleted" v-if="plan.status === 'draft'"
             class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-            <i class="fas fa-check"></i> Hoàn thành
+            <i class="fas fa-check"></i> Mark as Completed
           </button>
           <button @click="savePlan"
             class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-            <i class="fas fa-save"></i> Lưu
+            <i class="fas fa-save"></i> Save
           </button>
         </div>
       </div>
@@ -51,7 +50,7 @@
         <!-- Editor (main) -->
         <div class="flex-1 min-w-0">
           <TiptapEditor v-model="editorContent" :aiSuggestFn="handleAiSuggest"
-            placeholder="Bắt đầu soạn giáo án... AI sẽ gợi ý nội dung khi bạn dừng gõ." />
+            placeholder="Start writing your lesson plan... AI will suggest content as you type." />
         </div>
 
         <!-- Sidebar -->
@@ -59,22 +58,22 @@
           <!-- Plan Info -->
           <div class="bg-white border border-gray-200 rounded-lg p-4">
             <h3 class="text-sm font-semibold text-gray-700 mb-3">
-              <i class="fas fa-info-circle mr-1"></i> Thông tin giáo án
+              <i class="fas fa-info-circle mr-1"></i> Lesson Plan Information
             </h3>
             <div class="space-y-3">
               <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Tên giáo án</label>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Lesson Plan Name</label>
                 <input v-model="plan.title" type="text"
                   class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Môn học</label>
-                <input v-model="plan.subject" type="text" placeholder="VD: Toán"
+                <label class="block text-xs font-medium text-gray-500 mb-1">Subject</label>
+                <input v-model="plan.subject" type="text" placeholder="e.g., Math"
                   class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 mb-1">Khối / Lớp</label>
-                <input v-model="plan.grade_level" type="text" placeholder="VD: Lớp 10"
+                <label class="block text-xs font-medium text-gray-500 mb-1">Grade Level</label>
+                <input v-model="plan.grade_level" type="text" placeholder="e.g., 10th Grade"
                   class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
               </div>
             </div>
@@ -86,19 +85,19 @@
           <!-- Keyboard shortcuts -->
           <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h3 class="text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-keyboard mr-1"></i> Phím tắt
+              <i class="fas fa-keyboard mr-1"></i> Keyboard Shortcuts
             </h3>
             <div class="space-y-1.5 text-xs text-gray-500">
               <div class="flex justify-between">
-                <span>Chấp nhận gợi ý</span>
+                <span>Accept Suggestion</span>
                 <kbd class="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-[10px] font-mono">Tab</kbd>
               </div>
               <div class="flex justify-between">
-                <span>Bỏ qua gợi ý</span>
+                <span>Ignore Suggestion</span>
                 <kbd class="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-[10px] font-mono">Esc</kbd>
               </div>
               <div class="flex justify-between">
-                <span>Lưu</span>
+                <span>Save</span>
                 <kbd class="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-[10px] font-mono">Ctrl+S</kbd>
               </div>
             </div>
@@ -110,7 +109,7 @@
     <!-- Not found -->
     <div v-else-if="!loading" class="text-center py-20">
       <i class="fas fa-exclamation-triangle text-5xl text-gray-300 mb-4"></i>
-      <h3 class="text-lg font-semibold text-gray-600">Không tìm thấy giáo án</h3>
+      <h3 class="text-lg font-semibold text-gray-600">Lesson plan not found</h3>
     </div>
 
     <!-- Toast -->
@@ -155,7 +154,7 @@ async function fetchPlan() {
     editorContent.value = plan.value.content || ''
   } catch (err) {
     plan.value = null
-    showToast('Lỗi khi tải giáo án', 'error')
+    showToast('Error occurred while loading the lesson plan', 'error')
   } finally {
     loading.value = false
   }
@@ -190,9 +189,9 @@ async function savePlan() {
       grade_level: plan.value.grade_level,
       content: editorContent.value,
     })
-    showToast('Đã lưu giáo án', 'success')
+    showToast('Lesson plan saved successfully', 'success')
   } catch (err) {
-    showToast('Lỗi khi lưu giáo án', 'error')
+    showToast('Error occurred while saving the lesson plan', 'error')
   }
 }
 
@@ -204,9 +203,9 @@ async function markCompleted() {
       status: 'completed',
     })
     plan.value.status = 'completed'
-    showToast('Giáo án đã được đánh dấu hoàn thành', 'success')
+    showToast('Lesson plan marked as completed', 'success')
   } catch (err) {
-    showToast('Lỗi khi cập nhật trạng thái', 'error')
+    showToast('Error occurred while updating status', 'error')
   }
 }
 
@@ -234,7 +233,7 @@ function exportPDF() {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${plan.value.title || 'Giáo án'}</title>
+      <title>${plan.value.title || 'Lesson Plan'}</title>
       <style>
         body { font-family: 'Times New Roman', serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.8; color: #1a1a1a; }
         h1 { font-size: 24px; text-align: center; margin-bottom: 8px; }
@@ -252,9 +251,9 @@ function exportPDF() {
     </head>
     <body>
       <div class="header">
-        <h1>${plan.value.title || 'GIÁO ÁN'}</h1>
-        ${plan.value.subject ? `<p class="meta">Môn: ${plan.value.subject}</p>` : ''}
-        ${plan.value.grade_level ? `<p class="meta">${plan.value.grade_level}</p>` : ''}
+        <h1>${plan.value.title || 'Lesson Plan'}</h1>
+        ${plan.value.subject ? `<p class="meta">Subject: ${plan.value.subject}</p>` : ''}
+        ${plan.value.grade_level ? `<p class="meta">Grade Level: ${plan.value.grade_level}</p>` : ''}
       </div>
       ${editorEl.innerHTML}
     </body>

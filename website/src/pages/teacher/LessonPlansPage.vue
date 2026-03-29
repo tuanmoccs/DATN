@@ -3,13 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-bold text-gray-800">Soạn Giáo án</h2>
-        <p class="text-gray-500 mt-1">Soạn và quản lý giáo án với AI hỗ trợ</p>
+        <h2 class="text-2xl font-bold text-gray-800">Prepare Lesson Plans</h2>
+        <p class="text-gray-500 mt-1">Create and manage lesson plans with AI assistance</p>
       </div>
       <button @click="showCreateModal = true"
         class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
         <i class="fas fa-plus"></i>
-        Tạo giáo án mới
+        Create New Lesson Plan
       </button>
     </div>
 
@@ -17,7 +17,7 @@
     <div class="mb-6">
       <div class="relative max-w-md">
         <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
-        <input v-model="searchQuery" type="text" placeholder="Tìm kiếm giáo án..."
+        <input v-model="searchQuery" type="text" placeholder="Search lesson plans..."
           class="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
       </div>
     </div>
@@ -31,9 +31,10 @@
     <div v-else-if="filteredPlans.length === 0" class="text-center py-16">
       <i class="fas fa-file-alt text-5xl text-gray-300 mb-4"></i>
       <h3 class="text-lg font-semibold text-gray-600 mb-2">
-        {{ searchQuery ? 'Không tìm thấy giáo án' : 'Chưa có giáo án nào' }}
+        {{ searchQuery ? 'No lesson plans found' : 'No lesson plans yet' }}
       </h3>
-      <p class="text-gray-400">{{ searchQuery ? 'Thử tìm với từ khóa khác' : 'Bắt đầu tạo giáo án đầu tiên' }}</p>
+      <p class="text-gray-400">{{ searchQuery ? 'Try searching with different keywords' : `Get started by creating your
+        first lesson plan` }}</p>
     </div>
 
     <!-- Plans Grid -->
@@ -46,7 +47,7 @@
             {{ plan.title }}
           </h3>
           <span :class="statusClass(plan.status)" class="text-xs px-2 py-1 rounded-full whitespace-nowrap ml-2">
-            {{ plan.status === 'draft' ? 'Nháp' : 'Hoàn thành' }}
+            {{ plan.status === 'draft' ? 'Draft' : 'Completed' }}
           </span>
         </div>
         <div class="space-y-1 text-sm text-gray-500">
@@ -58,11 +59,11 @@
         <div class="mt-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button @click.stop="$router.push({ name: 'TeacherLessonPlanEditor', params: { id: plan.id } })"
             class="text-xs px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors">
-            <i class="fas fa-edit mr-1"></i> Chỉnh sửa
+            <i class="fas fa-edit mr-1"></i> Edit
           </button>
           <button @click.stop="confirmDelete(plan)"
             class="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors">
-            <i class="fas fa-trash mr-1"></i> Xóa
+            <i class="fas fa-trash mr-1"></i> Delete
           </button>
         </div>
       </div>
@@ -73,33 +74,33 @@
       <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         @click.self="showCreateModal = false">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 mx-4">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tạo giáo án mới</h3>
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New Lesson Plan</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tên giáo án *</label>
-              <input v-model="newPlan.title" type="text" placeholder="VD: Giáo án Toán lớp 10 - Bài 5"
+              <label class="block text-sm font-medium text-gray-700 mb-1">Lesson Plan Name *</label>
+              <input v-model="newPlan.title" type="text" placeholder="e.g., Math Lesson for Grade 10 - Topic 5"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
-              <input v-model="newPlan.subject" type="text" placeholder="VD: Toán, Văn, Lịch sử..."
+              <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <input v-model="newPlan.subject" type="text" placeholder="e.g., Math, Science, History..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Khối / Lớp</label>
-              <input v-model="newPlan.grade_level" type="text" placeholder="VD: Lớp 10, Lớp 12..."
+              <label class="block text-sm font-medium text-gray-700 mb-1">Grade Level</label>
+              <input v-model="newPlan.grade_level" type="text" placeholder="e.g., 10th Grade, 12th Grade..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
             </div>
           </div>
           <div class="flex items-center justify-end gap-3 mt-6">
             <button @click="showCreateModal = false"
               class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-              Hủy
+              Cancel
             </button>
             <button @click="createPlan" :disabled="!newPlan.title.trim() || creating"
               class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <i v-if="creating" class="fas fa-spinner fa-spin mr-1"></i>
-              Tạo giáo án
+              Create Lesson Plan
             </button>
           </div>
         </div>
@@ -163,7 +164,7 @@ async function fetchPlans() {
     const res = await api.lessonPlan.getAll()
     plans.value = res.data || []
   } catch (err) {
-    showToast('Lỗi khi tải danh sách giáo án', 'error')
+    showToast('Error occurred while loading lesson plans', 'error')
   } finally {
     loading.value = false
   }
@@ -179,20 +180,20 @@ async function createPlan() {
     // Navigate to editor
     router.push({ name: 'TeacherLessonPlanEditor', params: { id: res.data.id } })
   } catch (err) {
-    showToast(err?.response?.data?.message || 'Lỗi khi tạo giáo án', 'error')
+    showToast(err?.response?.data?.message || 'Error occurred while creating lesson plan', 'error')
   } finally {
     creating.value = false
   }
 }
 
 async function confirmDelete(plan) {
-  if (!confirm(`Xóa giáo án "${plan.title}"?`)) return
+  if (!confirm(`Delete lesson plan "${plan.title}"?`)) return
   try {
     await api.lessonPlan.delete(plan.id)
     plans.value = plans.value.filter(p => p.id !== plan.id)
-    showToast('Đã xóa giáo án', 'success')
+    showToast('Lesson plan deleted successfully', 'success')
   } catch (err) {
-    showToast('Lỗi khi xóa giáo án', 'error')
+    showToast('Error occurred while deleting lesson plan', 'error')
   }
 }
 

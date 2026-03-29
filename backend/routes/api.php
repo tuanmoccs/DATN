@@ -8,6 +8,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\StudentLessonController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\LessonPlanController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -28,9 +29,27 @@ Route::prefix('auth')->group(function () {
     Route::post('/register/teacher/verify-otp', [AuthController::class, 'registerTeacherVerifyOtp']);
     Route::post('/register/student', [AuthController::class, 'registerStudent']);
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Forgot & Reset Password
+    Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOtp']);
+    Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
 });
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // ==========================================
+    // Profile Management (cho cả Teacher & Student)
+    // ==========================================
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'getProfile']);
+        Route::post('/update', [ProfileController::class, 'updateProfile']);
+        Route::post('/avatar', [ProfileController::class, 'uploadAvatar']);
+        Route::post('/change-password', [ProfileController::class, 'changePassword']);
+    });
+
+    // ==========================================
+    // Authentication Routes
+    // ==========================================
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
 

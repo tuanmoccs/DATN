@@ -44,13 +44,13 @@
               <p class="text-sm font-semibold text-gray-800">{{ currentUser?.name }}</p>
               <p class="text-xs text-gray-500 truncate">{{ currentUser?.email }}</p>
             </div>
-            <router-link to="/teacher/settings" @click="dropdownVisible = false"
+            <router-link to="/teacher/profile" @click="dropdownVisible = false"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-              <i class="fas fa-user"></i> Personal Information
+              <i class="fas fa-user"></i> Hồ Sơ Cá Nhân
             </router-link>
             <button @click="handleLogout"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left">
-              <i class="fas fa-sign-out-alt"></i> Logout
+              <i class="fas fa-sign-out-alt"></i> Đăng Xuất
             </button>
           </div>
         </Transition>
@@ -92,13 +92,13 @@ const onAvatarError = () => {
 
 const pageTitles = {
   '/teacher/dashboard': 'Dashboard',
-  '/teacher/classes': 'Classes',
-  '/teacher/lessons': 'Lessons',
-  '/teacher/quizzes': 'Quizzes',
-  '/teacher/assignments': 'Assignments',
-  '/teacher/students': 'Students',
-  '/teacher/reports': 'Reports',
-  '/teacher/settings': 'Settings',
+  '/teacher/classes': 'Lớp Học',
+  '/teacher/lessons': 'Bài Học',
+  '/teacher/quizzes': 'Quiz',
+  '/teacher/assignments': 'Bài Tập',
+  '/teacher/students': 'Học Sinh',
+  '/teacher/reports': 'Báo Cáo',
+  '/teacher/profile': 'Hồ Sơ Cá Nhân',
 }
 
 const pageTitle = computed(() => {

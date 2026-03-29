@@ -16,6 +16,12 @@ const router = createRouter({
       meta: { guest: true }
     },
     {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('@/pages/ForgotPasswordPage.vue'),
+      meta: { guest: true }
+    },
+    {
       path: '/teacher',
       component: () => import('@/layouts/TeacherLayout.vue'),
       meta: { requiresAuth: true, role: 'teacher' },
@@ -78,6 +84,11 @@ const router = createRouter({
           name: 'TeacherAssignmentDetail',
           component: () => import('@/pages/teacher/AssignmentDetailPage.vue'),
           props: true,
+        },
+        {
+          path: 'profile',
+          name: 'TeacherProfile',
+          component: () => import('@/pages/teacher/ProfilePage.vue'),
         },
       ]
     },
