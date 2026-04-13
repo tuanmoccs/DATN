@@ -144,6 +144,7 @@ const autoSaveStatus = ref('')
 const toast = ref({ show: false, message: '', type: 'success' })
 
 let autoSaveTimer = null
+let autoSaveEnabled = false
 
 // Fetch plan detail
 async function fetchPlan() {
@@ -152,6 +153,8 @@ async function fetchPlan() {
     const res = await api.lessonPlan.getDetail(route.params.id)
     plan.value = res.data
     editorContent.value = plan.value.content || ''
+    // Enable auto-save only after initial content is set
+    setTimeout(() => { autoSaveEnabled = true }, 500)
   } catch (err) {
     plan.value = null
     showToast('Error occurred while loading the lesson plan', 'error')
@@ -160,8 +163,9 @@ async function fetchPlan() {
   }
 }
 
-// Auto-save when content changes
+// Auto-save when content changes (skip initial load)
 watch(editorContent, () => {
+  if (!autoSaveEnabled) return
   if (autoSaveTimer) clearTimeout(autoSaveTimer)
   autoSaveTimer = setTimeout(() => autoSave(), 3000)
 })

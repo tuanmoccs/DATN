@@ -73,6 +73,35 @@ async def process_document_text(request: DocumentTextRequest):
     )
 
 
+@router.post("/extract")
+async def extract_text(
+    file: UploadFile = File(...),
+):
+    """Extract text from an uploaded file and return it. Supports PDF, DOCX, TXT."""
+    file_bytes = await file.read()
+    filename = file.filename or ""
+
+    if filename.lower().endswith(".pdf"):
+        content_type = "pdf"
+    elif filename.lower().endswith(".docx"):
+        content_type = "docx"
+    elif filename.lower().endswith(".txt"):
+        content_type = "txt"
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
+
+    try:
+        text = extract_text_from_bytes(file_bytes, content_type)
+    except Exception as e:
+        logger.error(f"Text extraction failed: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to extract text: {str(e)}")
+
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No text content found in the document.")
+
+    return {"success": True, "text": text}
+
+
 @router.delete("/delete", response_model=DocumentProcessResponse)
 async def delete_document(request: DocumentDeleteRequest):
     """Delete all processed chunks for a lesson."""

@@ -224,7 +224,7 @@ class OpenAIService
       throw new \Exception('File không tồn tại: ' . $filePath);
     }
 
-    return match (true) {
+    $text = match (true) {
       str_contains($mimeType, 'text/plain') => file_get_contents($fullPath),
       str_contains($mimeType, 'pdf') => $this->extractTextFromPdf($fullPath),
       str_contains($mimeType, 'wordprocessingml') ||
@@ -233,6 +233,25 @@ class OpenAIService
         str_contains($mimeType, 'powerpoint') => $this->extractTextFromPptx($fullPath),
       default => throw new \Exception('Không hỗ trợ loại file này: ' . $mimeType),
     };
+
+    return $this->sanitizeUtf8($text);
+  }
+
+  /**
+   * Ensure the string is valid UTF-8, detecting and converting encoding if needed.
+   */
+  private function sanitizeUtf8(string $text): string
+  {
+    // Detect encoding; fall back to UTF-8 if detection fails
+    $encoding = mb_detect_encoding($text, ['UTF-8', 'Windows-1252', 'ISO-8859-1', 'GB2312', 'GBK', 'BIG5'], true);
+    if ($encoding && $encoding !== 'UTF-8') {
+      $text = mb_convert_encoding($text, 'UTF-8', $encoding);
+    }
+    // Remove any remaining invalid UTF-8 byte sequences
+    $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    // Strip non-printable control characters except newline/tab/CR
+    $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+    return $text;
   }
 
   /**

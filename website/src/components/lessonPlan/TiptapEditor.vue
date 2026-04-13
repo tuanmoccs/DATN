@@ -27,6 +27,7 @@ const emit = defineEmits(['update:modelValue'])
 const isAiLoading = ref(false)
 let debounceTimer = null
 let abortController = null
+let suppressUpdate = false
 
 const editor = useEditor({
   content: props.modelValue,
@@ -69,15 +70,19 @@ const editor = useEditor({
   onUpdate({ editor: ed }) {
     const html = ed.getHTML()
     emit('update:modelValue', html)
-    scheduleSuggestion(ed)
+    if (!suppressUpdate) {
+      scheduleSuggestion(ed)
+    }
   },
 
 })
 
-// Sync external v-model changes back into editor
+// Sync external v-model changes back into editor (without re-triggering AI)
 watch(() => props.modelValue, (val) => {
   if (editor.value && editor.value.getHTML() !== val) {
+    suppressUpdate = true
     editor.value.commands.setContent(val, false)
+    suppressUpdate = false
   }
 })
 
@@ -91,12 +96,18 @@ function scheduleSuggestion(ed) {
   const tr = ed.view.state.tr.setMeta(ghostTextPluginKey, { clear: true })
   ed.view.dispatch(tr)
 
-  if (!props.aiSuggestFn) return
+  if (!props.aiSuggestFn) {
+    console.log('[AI] No aiSuggestFn prop')
+    return
+  }
 
   const text = ed.getText()
-  if (text.trim().length < 20) return // Too short to suggest
+  console.log('[AI] scheduleSuggestion, text length:', text.trim().length)
+  if (text.trim().length < 5) return // Too short to suggest
 
+  console.log('[AI] Starting debounce timer:', props.debounceMs, 'ms')
   debounceTimer = setTimeout(async () => {
+    console.log('[AI] Debounce fired, calling fetchSuggestion')
     await fetchSuggestion(ed, text)
   }, props.debounceMs)
 }
@@ -106,13 +117,23 @@ async function fetchSuggestion(ed, text) {
   isAiLoading.value = true
 
   try {
+    console.log('[AI] Calling aiSuggestFn...')
     const result = await props.aiSuggestFn(text)
+    console.log('[AI] Got result:', result)
     const suggestion = result?.suggestion?.trim()
 
-    if (!suggestion || !ed.isFocused) return
+    if (!suggestion) {
+      console.log('[AI] Empty suggestion, skipping')
+      return
+    }
+    if (!ed.isFocused) {
+      console.log('[AI] Editor not focused, skipping')
+      return
+    }
 
     // Get current cursor position
     const { from } = ed.state.selection
+    console.log('[AI] Dispatching ghost text at pos:', from, 'suggestion:', suggestion.substring(0, 50) + '...')
     const tr = ed.view.state.tr.setMeta(ghostTextPluginKey, {
       suggestion,
       pos: from,

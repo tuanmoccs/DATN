@@ -69,6 +69,31 @@ class AiServiceClient
   }
 
   /**
+   * Extract text from a file using the Python AI Service (PyMuPDF / python-docx).
+   * Handles PDF, DOCX, and TXT correctly including UTF-8/Vietnamese content.
+   */
+  public function extractFileText(string $filePath, string $fileName): string
+  {
+    $fullPath = storage_path('app/' . $filePath);
+
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->attach('file', file_get_contents($fullPath), $fileName)
+      ->post("{$this->baseUrl}/api/documents/extract");
+
+    if (!$response->successful()) {
+      Log::error('AI Service: text extraction failed', [
+        'file' => $fileName,
+        'status' => $response->status(),
+        'body' => $response->body(),
+      ]);
+      throw new \RuntimeException('AI Service text extraction failed: ' . $response->body());
+    }
+
+    return (string) ($response->json('text') ?? '');
+  }
+
+  /**
    * Xóa document chunks trong vector DB
    */
   public function deleteDocumentChunks(int $lessonId): array

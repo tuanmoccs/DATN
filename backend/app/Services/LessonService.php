@@ -26,6 +26,26 @@ class LessonService
   ) {}
 
   /**
+   * Sanitize a string to valid UTF-8 and truncate safely (multibyte-aware).
+   * Prevents json_encode() from throwing "Malformed UTF-8 characters".
+   */
+  private function cleanText(?string $text, ?int $maxLength = null): ?string
+  {
+    if ($text === null) return null;
+    // Convert encoding if not valid UTF-8
+    if (!mb_check_encoding($text, 'UTF-8')) {
+      $detected = mb_detect_encoding($text, ['UTF-8', 'Windows-1252', 'ISO-8859-1'], true);
+      $text = $detected ? mb_convert_encoding($text, 'UTF-8', $detected) : '';
+    }
+    // Strip any remaining invalid sequences
+    $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+    if ($maxLength !== null) {
+      $text = mb_substr($text, 0, $maxLength);
+    }
+    return $text;
+  }
+
+  /**
    * Lấy danh sách bài học của lớp
    */
   public function getLessonsByClass(int $classId, int $teacherId): array
@@ -157,9 +177,9 @@ class LessonService
           'is_primary' => empty($contentText),
         ]);
 
-        // Extract text từ file để gửi cho AI
+        // Extract text từ file để gửi cho AI (dùng Python service - hỗ trợ PDF/DOCX đúng encoding)
         try {
-          $fileText = $this->openAIService->extractTextFromFile($filePath, $mimeType);
+          $fileText = $this->aiServiceClient->extractFileText($filePath, $file->getClientOriginalName());
           if (!empty($contentText)) {
             $contentText = $contentText . "\n\n" . $fileText;
           } else {
@@ -426,7 +446,7 @@ class LessonService
           'current_version' => 1,
           'status' => 'draft',
           'generated_by' => 'ai',
-          'ai_prompt' => substr($contentText, 0, 1000),
+          'ai_prompt' => $this->cleanText($contentText, 1000),
         ]);
       }
 
@@ -434,9 +454,9 @@ class LessonService
         PresentationSlide::create([
           'presentation_id' => $presentation->id,
           'order' => $slideData['order'],
-          'title' => $slideData['title'],
-          'content' => $slideData['content'],
-          'notes' => $slideData['notes'] ?? null,
+          'title' => $this->cleanText($slideData['title']),
+          'content' => $this->cleanText($slideData['content']),
+          'notes' => $this->cleanText($slideData['notes'] ?? null),
           'layout' => $slideData['layout'] ?? 'content',
           'image_url' => $slideImages[$slideData['order']] ?? null,
         ]);
@@ -525,7 +545,7 @@ class LessonService
         'description' => 'Auto-generated quiz for: ' . $lesson->title,
         'quiz_type' => 'online',
         'auto_generated' => true,
-        'ai_prompt' => substr($contentText, 0, 1000),
+        'ai_prompt' => $this->cleanText($contentText, 1000),
         'time_limit' => $questionCount * 2, // 2 phút mỗi câu
         'shuffle_questions' => true,
         'shuffle_options' => true,
@@ -539,8 +559,8 @@ class LessonService
         $question = QuizQuestion::create([
           'quiz_id' => $quiz->id,
           'question_type' => $questionData['question_type'] ?? 'multiple_choice',
-          'content' => $questionData['content'],
-          'explanation' => $questionData['explanation'] ?? null,
+          'content' => $this->cleanText($questionData['content']),
+          'explanation' => $this->cleanText($questionData['explanation'] ?? null),
           'order' => $questionData['order'],
           'points' => $questionData['points'] ?? 10,
         ]);
@@ -549,10 +569,10 @@ class LessonService
           foreach ($questionData['options'] as $optionData) {
             QuizOption::create([
               'question_id' => $question->id,
-              'option_text' => $optionData['option_text'],
+              'option_text' => $this->cleanText($optionData['option_text']),
               'is_correct' => $optionData['is_correct'] ?? false,
               'order' => $optionData['order'],
-              'explanation' => $optionData['explanation'] ?? null,
+              'explanation' => $this->cleanText($optionData['explanation'] ?? null),
             ]);
           }
         }
@@ -629,7 +649,7 @@ class LessonService
           'current_version' => 1,
           'status' => 'draft',
           'generated_by' => 'ai',
-          'ai_prompt' => substr($contentText, 0, 1000),
+          'ai_prompt' => $this->cleanText($contentText, 1000),
         ]);
 
         // Sinh hình ảnh cho slides có image_prompt
@@ -639,9 +659,9 @@ class LessonService
           PresentationSlide::create([
             'presentation_id' => $presentation->id,
             'order' => $slideData['order'],
-            'title' => $slideData['title'],
-            'content' => $slideData['content'],
-            'notes' => $slideData['notes'] ?? null,
+            'title' => $this->cleanText($slideData['title']),
+            'content' => $this->cleanText($slideData['content']),
+            'notes' => $this->cleanText($slideData['notes'] ?? null),
             'layout' => $slideData['layout'] ?? 'content',
             'image_url' => $slideImages[$slideData['order']] ?? null,
           ]);
@@ -685,7 +705,7 @@ class LessonService
           'description' => 'Auto-generated quiz for: ' . $lesson->title,
           'quiz_type' => 'online',
           'auto_generated' => true,
-          'ai_prompt' => substr($contentText, 0, 1000),
+          'ai_prompt' => $this->cleanText($contentText, 1000),
           'time_limit' => $questionCount * 2,
           'shuffle_questions' => true,
           'shuffle_options' => true,
@@ -699,8 +719,8 @@ class LessonService
           $question = QuizQuestion::create([
             'quiz_id' => $quiz->id,
             'question_type' => $questionData['question_type'] ?? 'multiple_choice',
-            'content' => $questionData['content'],
-            'explanation' => $questionData['explanation'] ?? null,
+            'content' => $this->cleanText($questionData['content']),
+            'explanation' => $this->cleanText($questionData['explanation'] ?? null),
             'order' => $questionData['order'],
             'points' => $questionData['points'] ?? 10,
           ]);
@@ -709,10 +729,10 @@ class LessonService
             foreach ($questionData['options'] as $optionData) {
               QuizOption::create([
                 'question_id' => $question->id,
-                'option_text' => $optionData['option_text'],
+                'option_text' => $this->cleanText($optionData['option_text']),
                 'is_correct' => $optionData['is_correct'] ?? false,
                 'order' => $optionData['order'],
-                'explanation' => $optionData['explanation'] ?? null,
+                'explanation' => $this->cleanText($optionData['explanation'] ?? null),
               ]);
             }
           }
@@ -838,9 +858,9 @@ class LessonService
         $contentParts[] = $content->content_text;
       } elseif (!empty($content->file_path)) {
         try {
-          $fileText = $this->openAIService->extractTextFromFile(
+          $fileText = $this->aiServiceClient->extractFileText(
             $content->file_path,
-            $content->mime_type
+            basename($content->file_path)
           );
           $contentParts[] = $fileText;
         } catch (\Exception $e) {

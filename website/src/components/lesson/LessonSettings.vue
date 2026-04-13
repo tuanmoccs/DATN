@@ -100,7 +100,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['refresh', 'toast'])
 
-const { $api } = useApi()
+const api = useApi()
 const router = useRouter()
 
 const saving = ref(false)
@@ -153,7 +153,7 @@ const saveLesson = async () => {
       formData.append('files[]', file)
     })
 
-    await $api.lesson.updateLesson(props.lesson.id, formData)
+    await api.lesson.updateLesson(props.lesson.id, formData)
     emit('toast', { type: 'success', message: 'Lesson updated successfully.' })
     emit('refresh')
   } catch (err) {
@@ -165,7 +165,7 @@ const saveLesson = async () => {
 
 const deleteLesson = async () => {
   try {
-    await $api.lesson.delete(props.lesson.id)
+    await api.lesson.deleteLesson(props.lesson.id)
     emit('toast', { type: 'success', message: 'Lesson deleted.' })
     router.push({ name: 'TeacherLessons' })
   } catch {
