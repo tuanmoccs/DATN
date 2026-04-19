@@ -89,6 +89,15 @@ class AuthController extends Controller
     return response()->json($result['data'], $result['status']);
   }
 
+  public function verifyForgotPasswordOtp(VerifyForgotPasswordOtpRequest $request): JsonResponse
+  {
+    $result = $this->authService->verifyForgotPasswordOtp(
+      $request->validated()
+    );
+
+    return response()->json($result['data'], $result['status']);
+  }
+
   public function resetPassword(ResetPasswordRequest $request): JsonResponse
   {
     $result = $this->authService->resetPassword(

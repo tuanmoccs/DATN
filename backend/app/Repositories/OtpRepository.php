@@ -50,6 +50,17 @@ class OtpRepository extends BaseRepository implements OtpRepositoryInterface
     return false;
   }
 
+  public function existsValid(string $email, string $otp, string $type = 'registration'): bool
+  {
+    return $this->query()
+      ->where('email', $email)
+      ->where('otp', $otp)
+      ->where('type', $type)
+      ->where('is_used', false)
+      ->where('expires_at', '>', now())
+      ->exists();
+  }
+
   public function deleteUnusedByEmail(string $email, string $type): int
   {
     return $this->query()

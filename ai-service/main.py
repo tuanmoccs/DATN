@@ -9,6 +9,7 @@ from app.core.security import verify_api_secret
 from app.api.documents import router as documents_router
 from app.api.slides import router as slides_router
 from app.api.quizzes import router as quizzes_router
+from app.api.reports import router as reports_router
 from app.api.chat import router as chat_router
 from app.api.autocomplete import router as autocomplete_router
 from app.api.health import router as health_router
@@ -54,6 +55,12 @@ app.include_router(
     quizzes_router,
     prefix="/api/quizzes",
     tags=["Quizzes"],
+    dependencies=[Depends(verify_api_secret)],
+)
+app.include_router(
+    reports_router,
+    prefix="/api/reports",
+    tags=["Reports"],
     dependencies=[Depends(verify_api_secret)],
 )
 app.include_router(

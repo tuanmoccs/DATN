@@ -42,6 +42,22 @@ $axios.$patch = async (url, data, config = {}) => {
 let isRefreshing = false
 let failedQueue = []
 
+const refreshSkipPaths = [
+  '/auth/login',
+  '/auth/register/teacher/send-otp',
+  '/auth/register/teacher/verify-otp',
+  '/auth/register/student',
+  '/auth/forgot-password/send-otp',
+  '/auth/forgot-password/verify-otp',
+  '/auth/forgot-password/reset',
+  '/auth/refresh',
+]
+
+const shouldSkipRefresh = (config = {}) => {
+  const requestUrl = config.url || ''
+  return refreshSkipPaths.some(path => requestUrl.includes(path))
+}
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -90,7 +106,7 @@ $axios.interceptors.response.use(
     const errorMessage = error.response?.data?.message
 
     // Xử lý lỗi 401 - Token hết hạn hoặc không hợp lệ
-    if (statusCode === 401 && !originalRequest._retry) {
+    if (statusCode === 401 && !originalRequest._retry && !shouldSkipRefresh(originalRequest)) {
       // Nếu đang refresh token, đưa request vào queue
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -177,7 +193,7 @@ $axios.interceptors.response.use(
 export { $axios }
 
 // Plugin install cho Vue 3
-export default {
+const axiosPlugin = {
   install(app) {
     // Provide axios cho toàn bộ app
     app.provide("axios", $axios)
@@ -186,3 +202,7 @@ export default {
     app.config.globalProperties.$axios = $axios
   },
 }
+
+Object.assign($axios, axiosPlugin)
+
+export default $axios

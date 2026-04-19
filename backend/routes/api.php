@@ -7,6 +7,7 @@ use App\Http\Controllers\LessonController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\StudentLessonController;
 use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AiCompetencyReportController;
 use App\Http\Controllers\LessonPlanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
@@ -32,7 +33,14 @@ Route::prefix('auth')->group(function () {
 
     // Forgot & Reset Password
     Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOtp']);
+    Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOtp']);
     Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
+
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+    });
 });
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -147,6 +155,16 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/submissions/{submissionId}', [AssignmentController::class, 'getSubmissionDetail']);
         Route::post('/submissions/{submissionId}/ai-grade', [AssignmentController::class, 'requestAIGrading']);
         Route::post('/submissions/{submissionId}/grade', [AssignmentController::class, 'finalizeGrading']);
+    });
+
+    // ==========================================
+    // Teacher - AI Competency Reports
+    // ==========================================
+    Route::prefix('teacher/competency-reports')->group(function () {
+        Route::get('/', [AiCompetencyReportController::class, 'index']);
+        Route::post('/generate', [AiCompetencyReportController::class, 'generate'])->middleware('throttle:ai');
+        Route::get('/{id}', [AiCompetencyReportController::class, 'show']);
+        Route::put('/{id}', [AiCompetencyReportController::class, 'update']);
     });
 
     // ==========================================

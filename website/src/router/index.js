@@ -86,6 +86,11 @@ const router = createRouter({
           props: true,
         },
         {
+          path: 'reports',
+          name: 'TeacherReports',
+          component: () => import('@/pages/teacher/ReportsPage.vue'),
+        },
+        {
           path: 'profile',
           name: 'TeacherProfile',
           component: () => import('@/pages/teacher/ProfilePage.vue'),

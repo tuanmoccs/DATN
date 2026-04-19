@@ -334,7 +334,7 @@ const verifyOtp = async () => {
 
   try {
     verifyLoading.value = true
-    await apiClient.post('/auth/forgot-password/reset-temp', {
+    await apiClient.post('/auth/forgot-password/verify-otp', {
       email: email.value,
       otp: otp.value
     })

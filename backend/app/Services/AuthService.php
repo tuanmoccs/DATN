@@ -238,7 +238,7 @@ class AuthService
         ];
       }
 
-      $otpCode = $this->otpRepository->generate($data['email'], 'forgot_password');
+      $otpCode = $this->otpRepository->generate($data['email'], 'reset_password');
 
       Mail::to($data['email'])->send(new OtpMail($otpCode, $user->name));
 
@@ -260,9 +260,30 @@ class AuthService
     }
   }
 
+  public function verifyForgotPasswordOtp(array $data): array
+  {
+    if (!$this->otpRepository->existsValid($data['email'], $data['otp'], 'reset_password')) {
+      return [
+        'data' => [
+          'success' => false,
+          'message' => 'MÃ£ OTP khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n'
+        ],
+        'status' => 400
+      ];
+    }
+
+    return [
+      'data' => [
+        'success' => true,
+        'message' => 'XÃ¡c minh OTP thÃ nh cÃ´ng'
+      ],
+      'status' => 200
+    ];
+  }
+
   public function resetPassword(array $data): array
   {
-    if (!$this->otpRepository->verify($data['email'], $data['otp'], 'forgot_password')) {
+    if (!$this->otpRepository->verify($data['email'], $data['otp'], 'reset_password')) {
       return [
         'data' => [
           'success' => false,

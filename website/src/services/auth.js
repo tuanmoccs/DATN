@@ -25,6 +25,9 @@ export default ($axios) => ({
   sendForgotPasswordOtp(data) {
     return $axios.$post('/auth/forgot-password/send-otp', data)
   },
+  verifyForgotPasswordOtp(data) {
+    return $axios.$post('/auth/forgot-password/verify-otp', data)
+  },
   resetPassword(data) {
     return $axios.$post('/auth/forgot-password/reset', data)
   },

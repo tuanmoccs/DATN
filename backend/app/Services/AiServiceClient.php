@@ -169,6 +169,26 @@ class AiServiceClient
   /**
    * Kiểm tra AI Service có hoạt động không
    */
+  /**
+   * Sinh báo cáo năng lực học sinh từ dữ liệu quiz và assignment qua Python AI Service.
+   */
+  public function generateCompetencyReport(array $payload): ?array
+  {
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->post("{$this->baseUrl}/api/reports/competency/generate", $payload);
+
+    if (!$response->successful()) {
+      Log::error('AI Service: competency report generation failed', [
+        'status' => $response->status(),
+        'body' => $response->body(),
+      ]);
+      return null;
+    }
+
+    return $response->json();
+  }
+
   public function healthCheck(): bool
   {
     try {
