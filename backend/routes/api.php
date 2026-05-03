@@ -139,9 +139,6 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{quizId}/questions/{questionId}', [QuizController::class, 'deleteQuestion']);
     });
 
-    // ==========================================
-    // Teacher - Quản lý bài tập (Assignment)
-    // ==========================================
     Route::prefix('teacher/assignments')->group(function () {
         Route::get('/class/{classId}', [AssignmentController::class, 'index']);
         Route::post('/', [AssignmentController::class, 'store']);
@@ -157,9 +154,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/submissions/{submissionId}/grade', [AssignmentController::class, 'finalizeGrading']);
     });
 
-    // ==========================================
-    // Teacher - AI Competency Reports
-    // ==========================================
     Route::prefix('teacher/competency-reports')->group(function () {
         Route::get('/', [AiCompetencyReportController::class, 'index']);
         Route::post('/generate', [AiCompetencyReportController::class, 'generate'])->middleware('throttle:ai');
@@ -167,17 +161,11 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{id}', [AiCompetencyReportController::class, 'update']);
     });
 
-    // ==========================================
-    // Student - Bài tập
-    // ==========================================
     Route::prefix('student/assignments')->group(function () {
         Route::get('/class/{classId}', [AssignmentController::class, 'studentAssignments']);
         Route::post('/{assignmentId}/submit', [AssignmentController::class, 'submitAssignment']);
     });
 
-    // ==========================================
-    // Teacher - Soạn Giáo án
-    // ==========================================
     Route::prefix('teacher/lesson-plans')->group(function () {
         Route::get('/', [LessonPlanController::class, 'index']);
         Route::post('/', [LessonPlanController::class, 'store']);

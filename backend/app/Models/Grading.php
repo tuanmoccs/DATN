@@ -49,7 +49,7 @@ class Grading extends Model
   // Methods
   public function calculatePercentage(): float
   {
-    if ($this->max_score == 0) return 0;
+    if ($this->score === null || $this->max_score == 0) return 0;
     return ($this->score / $this->max_score) * 100;
   }
 

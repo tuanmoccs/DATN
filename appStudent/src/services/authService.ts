@@ -57,7 +57,7 @@ const authService = {
   },
 
   refresh: async (): Promise<AuthResponse> => {
-    const response = await apiClient.post('/refresh');
+    const response = await apiClient.post('/auth/refresh');
     return response.data;
   },
 };

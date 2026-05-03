@@ -72,6 +72,10 @@ const processQueue = (error, token = null) => {
 // Request interceptor
 $axios.interceptors.request.use(
   (config) => {
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"]
+    }
+
     // Xử lý client options
     const configData = config.data || {}
     const { clientOptions } = configData

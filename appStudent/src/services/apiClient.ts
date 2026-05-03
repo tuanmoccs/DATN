@@ -11,7 +11,60 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor - tự động gắn token
+const refreshClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: API_CONFIG.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
+
+let isRefreshing = false;
+let authFailureHandler: (() => void | Promise<void>) | null = null;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+export const setAuthFailureHandler = (
+  handler: (() => void | Promise<void>) | null,
+) => {
+  authFailureHandler = handler;
+};
+
+const clearStoredAuthData = async () => {
+  await AsyncStorage.multiRemove([
+    'access_token',
+    'user_info',
+    'token_expired_at',
+  ]);
+};
+
+const handleAuthFailure = async () => {
+  await clearStoredAuthData();
+  if (authFailureHandler) {
+    await authFailureHandler();
+  }
+};
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach(request => {
+    if (error) {
+      request.reject(error);
+      return;
+    }
+
+    if (token) {
+      request.resolve(token);
+    } else {
+      request.reject(new Error('Missing refreshed access token'));
+    }
+  });
+
+  failedQueue = [];
+};
+
 apiClient.interceptors.request.use(
   async config => {
     const token = await AsyncStorage.getItem('access_token');
@@ -23,32 +76,24 @@ apiClient.interceptors.request.use(
   error => Promise.reject(error),
 );
 
-// Response interceptor - xử lý refresh token
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}> = [];
-
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
-  });
-  failedQueue = [];
-};
-
 apiClient.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const requestUrl = originalRequest?.url || '';
+    const isRefreshRequest = requestUrl.includes('/auth/refresh');
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (status === 401 && isRefreshRequest) {
+      processQueue(error, null);
+      isRefreshing = false;
+      await handleAuthFailure();
+      return Promise.reject(error);
+    }
+
+    if (status === 401 && originalRequest && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({resolve, reject});
         }).then(token => {
           originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -60,7 +105,16 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await apiClient.post('/auth/refresh');
+        const currentToken = await AsyncStorage.getItem('access_token');
+        const response = await refreshClient.post(
+          '/auth/refresh',
+          {},
+          {
+            headers: currentToken
+              ? {Authorization: `Bearer ${currentToken}`}
+              : undefined,
+          },
+        );
         const {access_token, expires_in} = response.data;
 
         await AsyncStorage.setItem('access_token', access_token);
@@ -73,10 +127,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Token hết hạn hoàn toàn - xóa dữ liệu auth
-        await AsyncStorage.removeItem('access_token');
-        await AsyncStorage.removeItem('user_info');
-        await AsyncStorage.removeItem('token_expired_at');
+        await handleAuthFailure();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

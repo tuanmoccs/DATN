@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AiServiceClient
 {
@@ -16,6 +17,27 @@ class AiServiceClient
     $this->baseUrl = rtrim(config('services.ai_service.url'), '/');
     $this->secret = config('services.ai_service.secret');
     $this->timeout = config('services.ai_service.timeout');
+  }
+
+  public function invokeAgent(string $agent, array $payload): ?array
+  {
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->post("{$this->baseUrl}/api/agents/execute", [
+        'agent' => $agent,
+        'payload' => $payload,
+      ]);
+
+    if (!$response->successful()) {
+      Log::error('AI Service: agent execution failed', [
+        'agent' => $agent,
+        'status' => $response->status(),
+        'body' => $response->body(),
+      ]);
+      return null;
+    }
+
+    return $response->json();
   }
 
   /**
@@ -94,6 +116,52 @@ class AiServiceClient
   }
 
   /**
+   * Send an assignment submission to the Python AI Service for extraction + grading.
+   */
+  public function gradeAssignmentSubmission(array $assignment, iterable $attachments): array
+  {
+    $request = Http::timeout($this->timeout)
+      ->withHeaders($this->headers());
+
+    foreach ($attachments as $attachment) {
+      $fullPath = Storage::disk('public')->path($attachment->file_path);
+
+      if (!file_exists($fullPath)) {
+        Log::warning('AI Service: assignment attachment file not found', [
+          'attachment_id' => $attachment->id,
+          'file_path' => $attachment->file_path,
+        ]);
+        continue;
+      }
+
+      $request = $request->attach(
+        'files',
+        file_get_contents($fullPath),
+        $attachment->file_name,
+        ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
+      );
+    }
+
+    $response = $request->post("{$this->baseUrl}/api/assignments/grade", [
+      'assignment_title' => $assignment['title'],
+      'assignment_description' => $assignment['description'] ?? '',
+      'assignment_instructions' => $assignment['instructions'] ?? '',
+      'max_score' => (string) $assignment['max_score'],
+    ]);
+
+    if (!$response->successful()) {
+      Log::error('AI Service: assignment grading failed', [
+        'assignment_title' => $assignment['title'],
+        'status' => $response->status(),
+        'body' => $response->body(),
+      ]);
+      throw new \RuntimeException('AI Service assignment grading failed: ' . $response->body());
+    }
+
+    return $response->json();
+  }
+
+  /**
    * Xóa document chunks trong vector DB
    */
   public function deleteDocumentChunks(int $lessonId): array
@@ -120,24 +188,13 @@ class AiServiceClient
    */
   public function generateSlides(int $lessonId, int $numSlides = 10, string $language = 'English'): ?array
   {
-    $response = Http::timeout($this->timeout)
-      ->withHeaders($this->headers())
-      ->post("{$this->baseUrl}/api/slides/generate", [
-        'lesson_id' => $lessonId,
-        'num_slides' => $numSlides,
-        'language' => $language,
-      ]);
+    $response = $this->invokeAgent('slides', [
+      'lesson_id' => $lessonId,
+      'num_slides' => $numSlides,
+      'language' => $language,
+    ]);
 
-    if (!$response->successful()) {
-      Log::error('AI Service: slide generation failed', [
-        'lesson_id' => $lessonId,
-        'status' => $response->status(),
-        'body' => $response->body(),
-      ]);
-      return null;
-    }
-
-    return $response->json();
+    return $response['result'] ?? null;
   }
 
   /**
@@ -145,25 +202,14 @@ class AiServiceClient
    */
   public function generateQuiz(int $lessonId, int $numQuestions = 10, string $language = 'English', string $difficulty = 'medium'): ?array
   {
-    $response = Http::timeout($this->timeout)
-      ->withHeaders($this->headers())
-      ->post("{$this->baseUrl}/api/quizzes/generate", [
-        'lesson_id' => $lessonId,
-        'num_questions' => $numQuestions,
-        'language' => $language,
-        'difficulty' => $difficulty,
-      ]);
+    $response = $this->invokeAgent('quiz', [
+      'lesson_id' => $lessonId,
+      'num_questions' => $numQuestions,
+      'language' => $language,
+      'difficulty' => $difficulty,
+    ]);
 
-    if (!$response->successful()) {
-      Log::error('AI Service: quiz generation failed', [
-        'lesson_id' => $lessonId,
-        'status' => $response->status(),
-        'body' => $response->body(),
-      ]);
-      return null;
-    }
-
-    return $response->json();
+    return $response['result'] ?? null;
   }
 
   /**
@@ -174,19 +220,8 @@ class AiServiceClient
    */
   public function generateCompetencyReport(array $payload): ?array
   {
-    $response = Http::timeout($this->timeout)
-      ->withHeaders($this->headers())
-      ->post("{$this->baseUrl}/api/reports/competency/generate", $payload);
-
-    if (!$response->successful()) {
-      Log::error('AI Service: competency report generation failed', [
-        'status' => $response->status(),
-        'body' => $response->body(),
-      ]);
-      return null;
-    }
-
-    return $response->json();
+    $response = $this->invokeAgent('competency_report', $payload);
+    return $response['result'] ?? null;
   }
 
   public function healthCheck(): bool
@@ -210,18 +245,14 @@ class AiServiceClient
         $payload['lesson_id'] = $lessonId;
       }
 
-      $response = Http::timeout(15)
-        ->withHeaders($this->headers())
-        ->post("{$this->baseUrl}/api/ai/suggest", $payload);
+      $response = $this->invokeAgent('autocomplete', $payload);
 
-      if (!$response->successful()) {
-        Log::warning('AI Service: autocomplete suggestion failed', [
-          'status' => $response->status(),
-        ]);
+      if (!$response) {
+        Log::warning('AI Service: autocomplete suggestion failed');
         return ['suggestion' => ''];
       }
 
-      return $response->json();
+      return $response['result'] ?? ['suggestion' => ''];
     } catch (\Exception $e) {
       Log::warning('AI Service: autocomplete request failed', [
         'error' => $e->getMessage(),

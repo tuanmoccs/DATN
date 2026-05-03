@@ -19,7 +19,7 @@ class AssignmentService
   public function __construct(
     private readonly AssignmentRepositoryInterface $assignmentRepository,
     private readonly AssignmentSubmissionRepositoryInterface $submissionRepository,
-    private readonly OpenAIService $openAIService,
+    private readonly AiServiceClient $aiServiceClient,
   ) {}
 
   // ================================================================
@@ -642,29 +642,17 @@ class AssignmentService
     $grading->save();
 
     try {
-      // Trích xuất nội dung bài nộp
-      $studentAnswer = $this->extractSubmissionContent($submission);
-
-      if (empty(trim($studentAnswer))) {
-        $grading->update([
-          'ai_status' => 'failed',
-          'ai_feedback' => 'Không thể đọc nội dung bài nộp',
-        ]);
-        return $grading;
-      }
-
-      // Gọi AI chấm điểm
-      $aiResult = $this->openAIService->gradeAssignmentSubmission(
-        $assignment->title,
-        $assignment->description ?? '',
-        $assignment->instructions ?? '',
-        $assignment->max_score,
-        $studentAnswer
-      );
+      // Python AI Service handles extraction and grading.
+      $aiResult = $this->aiServiceClient->gradeAssignmentSubmission([
+        'title' => $assignment->title,
+        'description' => $assignment->description,
+        'instructions' => $assignment->instructions,
+        'max_score' => $assignment->max_score,
+      ], $submission->attachments);
 
       // Cập nhật kết quả AI
       $grading->update([
-        'ai_suggested_score' => $aiResult['suggested_score'],
+        'ai_suggested_score' => $aiResult['suggested_score'] ?? null,
         'ai_feedback' => json_encode($aiResult, JSON_UNESCAPED_UNICODE),
         'ai_status' => 'completed',
         'ai_graded_at' => now(),
@@ -684,42 +672,6 @@ class AssignmentService
 
       return $grading->fresh();
     }
-  }
-
-  /**
-   * Trích xuất nội dung từ bài nộp (file hình ảnh, document, etc.)
-   */
-  private function extractSubmissionContent(AssignmentSubmission $submission): string
-  {
-    $contentParts = [];
-
-    foreach ($submission->attachments as $attachment) {
-      try {
-        $mimeType = $attachment->mime_type;
-
-        if (str_contains($mimeType, 'image')) {
-          // Sử dụng GPT-4 Vision để đọc hình ảnh
-          $text = $this->openAIService->extractTextFromImage($attachment->file_path);
-          $contentParts[] = $text;
-        } elseif (
-          str_contains($mimeType, 'pdf') ||
-          str_contains($mimeType, 'word') ||
-          str_contains($mimeType, 'document') ||
-          str_contains($mimeType, 'text')
-        ) {
-          // Trích xuất text từ document
-          $text = $this->openAIService->extractTextFromFile($attachment->file_path, $mimeType);
-          $contentParts[] = $text;
-        }
-      } catch (\Exception $e) {
-        Log::warning('Failed to extract content from attachment', [
-          'attachment_id' => $attachment->id,
-          'error' => $e->getMessage(),
-        ]);
-      }
-    }
-
-    return implode("\n\n", $contentParts);
   }
 
   /**

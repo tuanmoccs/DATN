@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.schemas.document import DocumentDeleteRequest, DocumentProcessResponse, DocumentTextRequest
-from app.services.document_processor import extract_text_from_bytes
+from app.services.document_processor import extract_text_from_bytes_with_fallback
 from app.services.rag_service import chunk_text, delete_lesson_chunks, store_chunks
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ async def process_document(
 ):
     """Upload and process a document: extract text → chunk → embed → store in vector DB."""
     file_bytes = await file.read()
-    filename = file.filename or ""
+    filename = (file.filename or "").lower()
 
     if filename.endswith(".pdf"):
         content_type = "pdf"
@@ -29,12 +29,17 @@ async def process_document(
         raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
 
     try:
-        text = extract_text_from_bytes(file_bytes, content_type)
+        text = await extract_text_from_bytes_with_fallback(file_bytes, content_type)
     except Exception as e:
         logger.error(f"Text extraction failed: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to extract text: {str(e)}")
 
     if not text.strip():
+        if content_type == "pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="No selectable text found in the PDF. The file may be a scanned image and requires OCR.",
+            )
         raise HTTPException(status_code=400, detail="No text content found in the document.")
 
     # Delete old chunks for this lesson before re-processing
@@ -79,7 +84,7 @@ async def extract_text(
 ):
     """Extract text from an uploaded file and return it. Supports PDF, DOCX, TXT."""
     file_bytes = await file.read()
-    filename = file.filename or ""
+    filename = (file.filename or "").lower()
 
     if filename.lower().endswith(".pdf"):
         content_type = "pdf"
@@ -91,7 +96,7 @@ async def extract_text(
         raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
 
     try:
-        text = extract_text_from_bytes(file_bytes, content_type)
+        text = await extract_text_from_bytes_with_fallback(file_bytes, content_type)
     except Exception as e:
         logger.error(f"Text extraction failed: {e}")
         raise HTTPException(status_code=400, detail=f"Failed to extract text: {str(e)}")

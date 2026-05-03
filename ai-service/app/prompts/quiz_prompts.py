@@ -10,7 +10,10 @@ Rules:
 - Difficulty level: {difficulty}
 - Include brief explanations for why each correct answer is correct
 - Questions should cover different aspects of the lesson content
-- Avoid ambiguous or trick questions"""
+- Avoid ambiguous or trick questions
+- Focus ONLY on student-facing knowledge: concepts, definitions, facts, formulas, examples, procedures, and exercises students are expected to learn
+- DO NOT create questions from teacher instructions, classroom management notes, pedagogy tips, lesson flow, teaching methods, activity facilitation, or advice written for teachers
+- If the source mixes teacher notes and student knowledge, ignore the teacher-only parts and use only the academic content relevant to students"""
 
 QUIZ_USER_PROMPT = """Based on the following lesson content, generate exactly {num_questions} multiple-choice questions.
 
@@ -29,5 +32,8 @@ Respond with a JSON array of questions. Each question must have:
   - "explanation": string
 - "explanation": string (explanation for the correct answer)
 - "points": integer (default 1)
+
+- Do not ask students about what the teacher should do, how the class should be organized, or how the lesson should be delivered
+- Prefer questions about the actual subject matter students must understand
 
 Return ONLY valid JSON, no other text."""

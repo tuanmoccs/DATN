@@ -2,8 +2,8 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
+from app.agents import execute_agent
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.chat_service import chat_with_lesson
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -13,7 +13,7 @@ router = APIRouter()
 async def chat_endpoint(request: ChatRequest):
     """Student asks a question about a lesson, answered using RAG + LLM."""
     try:
-        result = await chat_with_lesson(request)
+        result = await execute_agent("chat", request.model_dump())
         if not result.success:
             raise HTTPException(status_code=404, detail=result.message)
         return result

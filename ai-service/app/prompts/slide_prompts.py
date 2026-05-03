@@ -9,7 +9,11 @@ Rules:
 - Maintain logical flow between slides
 - First slide should be a title/introduction slide
 - Last slide should be a summary/review slide
-- Suggest relevant image descriptions for visual aids"""
+- Suggest relevant image descriptions for visual aids
+- Focus ONLY on lesson knowledge students need to learn: concepts, definitions, facts, formulas, worked examples, procedures, and key takeaways
+- DO NOT include teacher instructions, classroom management notes, pedagogy tips, lesson procedures, group activity management, or advice about what the teacher should do
+- If the source mixes teacher notes and lesson content, ignore the teacher-only parts and build slides only from the academic content relevant to students
+- Speaker notes, if present, must explain the academic content on the slide, not provide teacher-only operational instructions"""
 
 SLIDE_USER_PROMPT = """Based on the following lesson content, create exactly {num_slides} presentation slides.
 
@@ -24,5 +28,8 @@ Respond with a JSON array of slides. Each slide must have:
 - "bullet_points": array of strings (3-5 points)
 - "speaker_notes": string (brief notes for the teacher)
 - "image_suggestion": string (describe a relevant image)
+
+- Do not turn teaching tips, facilitation steps, or classroom instructions into slide content
+- Keep the slides centered on the subject matter of the lesson itself
 
 Return ONLY valid JSON, no other text."""

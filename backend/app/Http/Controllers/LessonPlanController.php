@@ -89,7 +89,7 @@ class LessonPlanController extends Controller
   public function uploadReference(Request $request, int $id): JsonResponse
   {
     $request->validate([
-      'file' => 'required|file|max:20480|mimes:pdf,doc,docx,txt',
+      'file' => 'required|file|max:20480|mimes:pdf,docx,txt',
     ]);
 
     $result = $this->lessonPlanService->uploadReference(

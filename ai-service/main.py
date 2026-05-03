@@ -12,6 +12,8 @@ from app.api.quizzes import router as quizzes_router
 from app.api.reports import router as reports_router
 from app.api.chat import router as chat_router
 from app.api.autocomplete import router as autocomplete_router
+from app.api.agents import router as agents_router
+from app.api.assignments import router as assignments_router
 from app.api.health import router as health_router
 
 
@@ -73,6 +75,18 @@ app.include_router(
     autocomplete_router,
     prefix="/api/ai",
     tags=["Autocomplete"],
+    dependencies=[Depends(verify_api_secret)],
+)
+app.include_router(
+    agents_router,
+    prefix="/api/agents",
+    tags=["Agents"],
+    dependencies=[Depends(verify_api_secret)],
+)
+app.include_router(
+    assignments_router,
+    prefix="/api/assignments",
+    tags=["Assignments"],
     dependencies=[Depends(verify_api_secret)],
 )
 

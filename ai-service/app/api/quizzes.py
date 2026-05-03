@@ -2,8 +2,8 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
+from app.agents import execute_agent
 from app.schemas.quiz import QuizGenerateRequest, QuizGenerateResponse
-from app.services.quiz_service import generate_quiz
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -13,7 +13,7 @@ router = APIRouter()
 async def generate_quiz_endpoint(request: QuizGenerateRequest):
     """Generate quiz questions from lesson content using RAG + LLM."""
     try:
-        result = await generate_quiz(request)
+        result = await execute_agent("quiz", request.model_dump())
         if not result.success:
             raise HTTPException(status_code=404, detail=result.message)
         return result
