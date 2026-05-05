@@ -69,7 +69,7 @@ class AiServiceClient
    */
   public function processDocumentFile(int $lessonId, string $filePath, string $fileName): array
   {
-    $fullPath = storage_path('app/' . $filePath);
+    $fullPath = storage_path('app/public/' . $filePath);
 
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())
@@ -96,7 +96,7 @@ class AiServiceClient
    */
   public function extractFileText(string $filePath, string $fileName): string
   {
-    $fullPath = storage_path('app/' . $filePath);
+    $fullPath = storage_path('app/public/' . $filePath);
 
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())

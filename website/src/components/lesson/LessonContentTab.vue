@@ -105,6 +105,11 @@ defineProps({
 const selectedContent = ref(null)
 
 const openDetail = (content) => {
+  if (content.content_type === 'pdf' && content.file_path) {
+    const storageUrl = import.meta.env.VITE_STORAGE_ENDPOINT || 'http://localhost:8000/storage'
+    window.open(`${storageUrl}/${content.file_path}`, '_blank')
+    return
+  }
   selectedContent.value = content
 }
 
