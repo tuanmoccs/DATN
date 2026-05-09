@@ -215,11 +215,11 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
         <View style={styles.card}>
           <Text style={styles.title}>Quên mật khẩu</Text>
-          <Text style={styles.subtitle}>Không cần liên hệ admin để lấy lại tài khoản.</Text>
+          {/* <Text style={styles.subtitle}>Không cần liên hệ admin để lấy lại tài khoản.</Text> */}
 
-          <View style={styles.stepBadge}>
+          {/*<View style={styles.stepBadge}>
             <Text style={styles.stepBadgeText}>Bước {step}/3</Text>
-          </View>
+          </View>*/}
 
           {message ? (
             <View

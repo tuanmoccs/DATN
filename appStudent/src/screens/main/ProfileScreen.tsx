@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#0D47A1',
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: (StatusBar.currentHeight || 0) + 18,
     paddingBottom: 22,
   },
   headerTitle: {

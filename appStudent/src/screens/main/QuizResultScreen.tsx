@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
 
   // Score Header
   scoreHeader: {
-    alignItems: 'center', paddingTop: 24, paddingBottom: 28, paddingHorizontal: 20,
+    alignItems: 'center', paddingTop: (StatusBar.currentHeight || 0) + 24, paddingBottom: 28, paddingHorizontal: 20,
   },
   scoreHeaderPass: {backgroundColor: '#059669'},
   scoreHeaderFail: {backgroundColor: '#DC2626'},

@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#0D47A1',
-    paddingTop: 44,
+    paddingTop: (StatusBar.currentHeight || 0) + 12,
     paddingBottom: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',

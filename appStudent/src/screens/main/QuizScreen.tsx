@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#0D47A1', paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: '#0D47A1', paddingHorizontal: 16, paddingTop: (StatusBar.currentHeight || 0) + 12, paddingBottom: 12,
     gap: 12,
   },
   headerClose: {fontSize: 20, color: 'rgba(255,255,255,0.8)', fontWeight: '600'},

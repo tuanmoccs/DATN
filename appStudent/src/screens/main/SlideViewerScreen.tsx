@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   // Top Bar
   topBar: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8,
+    paddingHorizontal: 16, paddingTop: (StatusBar.currentHeight || 0) + 10, paddingBottom: 8,
     gap: 12,
   },
   closeBtn: {

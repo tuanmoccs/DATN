@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D47A1',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: (StatusBar.currentHeight || 0) + 12,
     paddingBottom: 16,
     paddingHorizontal: 16,
   },
