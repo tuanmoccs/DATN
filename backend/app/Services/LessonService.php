@@ -162,7 +162,7 @@ class LessonService
 
       // Upload file nếu có
       if ($file) {
-        $filePath = $file->store('lesson_contents', 'local');
+        $filePath = $file->store('lesson_contents', 'public');
         $mimeType = $file->getMimeType();
         $fileSize = $file->getSize();
 
@@ -294,7 +294,7 @@ class LessonService
 
       // Upload file mới nếu có
       if ($file) {
-        $filePath = $file->store('lesson_contents', 'local');
+        $filePath = $file->store('lesson_contents', 'public');
         $mimeType = $file->getMimeType();
         $fileSize = $file->getSize();
 

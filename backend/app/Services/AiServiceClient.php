@@ -70,7 +70,7 @@ class AiServiceClient
    */
   public function processDocumentFile(int $lessonId, string $filePath, string $fileName): array
   {
-    $fullPath = storage_path('app/' . $filePath);
+    $fullPath = $this->resolveStoredFilePath($filePath);
 
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())
@@ -97,7 +97,7 @@ class AiServiceClient
    */
   public function extractFileText(string $filePath, string $fileName): string
   {
-    $fullPath = storage_path('app/' . $filePath);
+    $fullPath = $this->resolveStoredFilePath($filePath);
 
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())
@@ -328,5 +328,20 @@ class AiServiceClient
       'Accept' => 'application/json',
       'X-API-Secret' => $this->secret,
     ];
+  }
+
+  private function resolveStoredFilePath(string $filePath): string
+  {
+    $publicPath = Storage::disk('public')->path($filePath);
+    if (file_exists($publicPath)) {
+      return $publicPath;
+    }
+
+    $localPath = Storage::disk('local')->path($filePath);
+    if (file_exists($localPath)) {
+      return $localPath;
+    }
+
+    throw new \RuntimeException("Stored file not found: {$filePath}");
   }
 }

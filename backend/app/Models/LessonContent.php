@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class LessonContent extends Model
 {
@@ -28,6 +29,10 @@ class LessonContent extends Model
     'is_primary' => 'boolean',
   ];
 
+  protected $appends = [
+    'file_url',
+  ];
+
   // Relationships
   public function lesson(): BelongsTo
   {
@@ -43,5 +48,18 @@ class LessonContent extends Model
   public function scopeByType($query, $type)
   {
     return $query->where('content_type', $type);
+  }
+
+  public function getFileUrlAttribute(): ?string
+  {
+    if (empty($this->file_path)) {
+      return null;
+    }
+
+    if (Storage::disk('public')->exists($this->file_path)) {
+      return Storage::disk('public')->url($this->file_path);
+    }
+
+    return null;
   }
 }
