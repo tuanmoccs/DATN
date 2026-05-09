@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (params: LoginParams) => Promise<void>;
   register: (params: RegisterParams) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (userData: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +40,10 @@ const clearAuthData = async () => {
     'user_info',
     'token_expired_at',
   ]);
+};
+
+const persistUserData = async (user: User) => {
+  await AsyncStorage.setItem('user_info', JSON.stringify(user));
 };
 
 const isTokenExpired = (expiredAt: string | null) => {
@@ -127,6 +132,11 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
     }
   };
 
+  const updateUser = async (userData: User) => {
+    await persistUserData(userData);
+    setUser(userData);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -136,6 +146,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
         login,
         register,
         logout,
+        updateUser,
       }}>
       {children}
     </AuthContext.Provider>

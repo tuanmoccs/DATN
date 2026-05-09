@@ -19,4 +19,13 @@ class DashboardController extends Controller
     $result = $this->dashboardService->getTeacherDashboard(auth()->id());
     return response()->json($result['data'], $result['status']);
   }
+
+  /**
+   * Get student dashboard data
+   */
+  public function studentDashboard(): JsonResponse
+  {
+    $result = $this->dashboardService->getStudentDashboard(auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
 }

@@ -65,6 +65,7 @@ Route::middleware('auth:api')->group(function () {
     // Teacher - Dashboard
     // ==========================================
     Route::get('/teacher/dashboard', [DashboardController::class, 'teacherDashboard']);
+    Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
 
     // ==========================================
     // Teacher - Quản lý lớp học

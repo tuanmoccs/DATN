@@ -10,6 +10,7 @@ use App\Models\Grading;
 use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\LessonProgress;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -35,6 +36,175 @@ class DashboardService
         'top_quiz_students' => $topQuizStudents,
         'top_assignment_students' => $topAssignmentStudents,
         'recent_activity' => $recentActivity,
+      ],
+    ];
+  }
+
+  /**
+   * Get student dashboard data
+   */
+  public function getStudentDashboard(int $studentId): array
+  {
+    $activeEnrollments = Enrollment::where('user_id', $studentId)
+      ->where('status', 'active')
+      ->with(['class.teacher'])
+      ->get();
+
+    $pendingEnrollments = Enrollment::where('user_id', $studentId)
+      ->where('status', 'pending')
+      ->with(['class.teacher'])
+      ->get();
+
+    $activeClassIds = $activeEnrollments
+      ->pluck('class_id')
+      ->filter()
+      ->values()
+      ->all();
+
+    $totalLessons = empty($activeClassIds)
+      ? 0
+      : Lesson::whereIn('class_id', $activeClassIds)->count();
+
+    $completedLessons = empty($activeClassIds)
+      ? 0
+      : LessonProgress::where('student_id', $studentId)
+      ->whereIn('lesson_id', Lesson::whereIn('class_id', $activeClassIds)->pluck('id'))
+      ->where('status', 'completed')
+      ->count();
+
+    $averageQuizScore = QuizAttempt::where('student_id', $studentId)
+      ->whereIn('status', ['submitted', 'graded'])
+      ->avg('percentage');
+
+    $upcomingAssignmentsBaseQuery = Assignment::whereIn('class_id', $activeClassIds)
+      ->where('status', 'published')
+      ->whereNotNull('due_date')
+      ->where('due_date', '>=', now())
+      ->with([
+        'class:id,name',
+        'submissions' => function ($query) use ($studentId) {
+          $query->where('student_id', $studentId)->select('id', 'assignment_id', 'student_id', 'status', 'submitted_at');
+        },
+      ])
+      ->orderBy('due_date');
+
+    $recentQuizAttempts = QuizAttempt::where('student_id', $studentId)
+      ->whereIn('status', ['submitted', 'graded'])
+      ->with(['quiz.lesson.class'])
+      ->orderByDesc('submitted_at')
+      ->limit(5)
+      ->get()
+      ->map(fn($attempt) => [
+        'attempt_id' => $attempt->id,
+        'quiz_id' => $attempt->quiz_id,
+        'quiz_title' => $attempt->quiz?->title,
+        'lesson_title' => $attempt->quiz?->lesson?->title,
+        'class_name' => $attempt->quiz?->lesson?->class?->name,
+        'percentage' => $attempt->percentage !== null ? round((float) $attempt->percentage, 2) : null,
+        'submitted_at' => $attempt->submitted_at?->toISOString() ?? $attempt->created_at?->toISOString(),
+      ])
+      ->values()
+      ->toArray();
+
+    $recentLessons = empty($activeClassIds)
+      ? []
+      : Lesson::whereIn('class_id', $activeClassIds)
+      ->with([
+        'class:id,name',
+        'progress' => function ($query) use ($studentId) {
+          $query->where('student_id', $studentId);
+        },
+      ])
+      ->orderByDesc('updated_at')
+      ->limit(5)
+      ->get()
+      ->map(function ($lesson) {
+        $progress = $lesson->progress->first();
+        $progressPercent = 0;
+
+        if ($progress && $progress->total_slides > 0) {
+          $progressPercent = round(($progress->slides_viewed / $progress->total_slides) * 100, 2);
+        }
+
+        return [
+          'lesson_id' => $lesson->id,
+          'title' => $lesson->title,
+          'class_name' => $lesson->class?->name,
+          'status' => $progress?->status ?? 'not_started',
+          'progress_percent' => $progressPercent,
+          'updated_at' => $lesson->updated_at?->toISOString(),
+        ];
+      })
+      ->values()
+      ->toArray();
+
+    $activeClasses = $activeEnrollments
+      ->map(fn($enrollment) => [
+        'id' => $enrollment->class?->id,
+        'name' => $enrollment->class?->name,
+        'teacher_name' => $enrollment->class?->teacher?->name,
+        'semester' => $enrollment->class?->semester,
+        'joined_at' => $enrollment->joined_at?->toISOString(),
+      ])
+      ->filter(fn($class) => !empty($class['id']))
+      ->values()
+      ->toArray();
+
+    $pendingClasses = $pendingEnrollments
+      ->map(fn($enrollment) => [
+        'id' => $enrollment->class?->id,
+        'name' => $enrollment->class?->name,
+        'teacher_name' => $enrollment->class?->teacher?->name,
+        'requested_at' => $enrollment->created_at?->toISOString(),
+      ])
+      ->filter(fn($class) => !empty($class['id']))
+      ->values()
+      ->toArray();
+
+    $upcomingAssignments = (clone $upcomingAssignmentsBaseQuery)
+      ->limit(5)
+      ->get()
+      ->map(function ($assignment) {
+        $submission = $assignment->submissions->first();
+
+        return [
+          'assignment_id' => $assignment->id,
+          'title' => $assignment->title,
+          'class_name' => $assignment->class?->name,
+          'due_date' => $assignment->due_date?->toISOString(),
+          'submission_type' => $assignment->submission_type,
+          'status' => $submission?->status ?? 'pending',
+          'submitted_at' => $submission?->submitted_at?->toISOString(),
+        ];
+      })
+      ->values()
+      ->toArray();
+
+    $pendingAssignmentsCount = (clone $upcomingAssignmentsBaseQuery)
+      ->whereDoesntHave('submissions', function ($query) use ($studentId) {
+        $query->where('student_id', $studentId);
+      })
+      ->count();
+
+    return [
+      'status' => 200,
+      'data' => [
+        'success' => true,
+        'data' => [
+          'stats' => [
+            'active_classes' => count($activeClasses),
+            'pending_classes' => count($pendingClasses),
+            'total_lessons' => $totalLessons,
+            'completed_lessons' => $completedLessons,
+            'average_quiz_score' => $averageQuizScore !== null ? round((float) $averageQuizScore, 2) : null,
+            'pending_assignments' => $pendingAssignmentsCount,
+          ],
+          'active_classes' => $activeClasses,
+          'pending_classes' => $pendingClasses,
+          'recent_lessons' => $recentLessons,
+          'upcoming_assignments' => $upcomingAssignments,
+          'recent_quiz_attempts' => $recentQuizAttempts,
+        ],
       ],
     ];
   }

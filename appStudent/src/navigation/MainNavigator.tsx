@@ -4,6 +4,7 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Text, StyleSheet} from 'react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import ClassesScreen from '../screens/main/ClassesScreen';
+import ProfileScreen from '../screens/main/ProfileScreen';
 import ClassDetailScreen from '../screens/main/ClassDetailScreen';
 import LessonDetailScreen from '../screens/main/LessonDetailScreen';
 import SlideViewerScreen from '../screens/main/SlideViewerScreen';
@@ -17,6 +18,7 @@ import {SlideInfo} from '../services/lessonService';
 export type MainTabParamList = {
   HomeTab: undefined;
   ClassesTab: undefined;
+  ProfileTab: undefined;
 };
 
 export type MainStackParamList = {
@@ -68,8 +70,8 @@ const MainTabs: React.FC = () => {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          title: 'Trang chủ',
-          tabBarIcon: ({focused}) => <TabIcon label="🏠" focused={focused} />,
+          title: 'Dashboard',
+          tabBarIcon: ({focused}) => <TabIcon label="D" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -77,7 +79,15 @@ const MainTabs: React.FC = () => {
         component={ClassesScreen}
         options={{
           title: 'Lớp học',
-          tabBarIcon: ({focused}) => <TabIcon label="📚" focused={focused} />,
+          tabBarIcon: ({focused}) => <TabIcon label="C" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          title: 'Cá nhân',
+          tabBarIcon: ({focused}) => <TabIcon label="P" focused={focused} />,
         }}
       />
     </Tab.Navigator>
@@ -105,8 +115,9 @@ const MainNavigator: React.FC = () => {
 
 const styles = StyleSheet.create({
   tabIcon: {
-    fontSize: 22,
+    fontSize: 18,
     opacity: 0.6,
+    fontWeight: '700',
   },
   tabIconActive: {
     opacity: 1,

@@ -33,6 +33,27 @@ export interface ApiValidationError {
   errors?: Record<string, string[]>;
 }
 
+export interface ForgotPasswordParams {
+  email: string;
+}
+
+export interface VerifyForgotPasswordOtpParams {
+  email: string;
+  otp: string;
+}
+
+export interface ResetPasswordParams {
+  email: string;
+  otp: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface BasicApiResponse {
+  success: boolean;
+  message: string;
+}
+
 const authService = {
   login: async (params: LoginParams): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/login', {
@@ -58,6 +79,33 @@ const authService = {
 
   refresh: async (): Promise<AuthResponse> => {
     const response = await apiClient.post('/auth/refresh');
+    return response.data;
+  },
+
+  sendForgotPasswordOtp: async (
+    params: ForgotPasswordParams,
+  ): Promise<BasicApiResponse> => {
+    const response = await apiClient.post('/auth/forgot-password/send-otp', {
+      ...params,
+      role: 'student',
+    });
+    return response.data;
+  },
+
+  verifyForgotPasswordOtp: async (
+    params: VerifyForgotPasswordOtpParams,
+  ): Promise<BasicApiResponse> => {
+    const response = await apiClient.post(
+      '/auth/forgot-password/verify-otp',
+      params,
+    );
+    return response.data;
+  },
+
+  resetPassword: async (
+    params: ResetPasswordParams,
+  ): Promise<BasicApiResponse> => {
+    const response = await apiClient.post('/auth/forgot-password/reset', params);
     return response.data;
   },
 };
