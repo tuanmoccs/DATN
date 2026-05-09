@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.agents.autocomplete_agent import AutocompleteAgent
 from app.agents.base import BaseAgent
 from app.agents.chat_agent import ChatAgent
+from app.agents.image_agent import ImageAgent
 from app.agents.quiz_agent import QuizAgent
 from app.agents.report_agent import CompetencyReportAgent
 from app.agents.slide_agent import SlideAgent
@@ -29,6 +30,7 @@ class AgentRegistry:
 agent_registry = AgentRegistry([
     ChatAgent(),
     SlideAgent(),
+    ImageAgent(),
     QuizAgent(),
     CompetencyReportAgent(),
     AutocompleteAgent(),

@@ -437,7 +437,7 @@ class LessonService
       }
 
       // Sinh hình ảnh cho slides có image_prompt
-      $slideImages = $this->openAIService->generateSlideImages($slides);
+      $slideImages = $this->generateSlideImages($slides);
 
       $presentation = $lesson->presentation;
       if (!$presentation) {
@@ -653,7 +653,7 @@ class LessonService
         ]);
 
         // Sinh hình ảnh cho slides có image_prompt
-        $slideImages = $this->openAIService->generateSlideImages($slides);
+        $slideImages = $this->generateSlideImages($slides);
 
         foreach ($slides as $slideData) {
           PresentationSlide::create([
@@ -844,6 +844,38 @@ class LessonService
       ]);
       return null;
     }
+  }
+
+  /**
+   * Sinh ảnh slide qua AI service để đồng bộ pipeline, fallback về OpenAIService nếu cần.
+   */
+  private function generateSlideImages(array $slides): array
+  {
+    if (!config('openai.generate_images', true)) {
+      return [];
+    }
+
+    $slidesWithPrompt = array_values(array_filter($slides, fn($slide) => !empty($slide['image_prompt'] ?? null)));
+    if (empty($slidesWithPrompt)) {
+      return [];
+    }
+
+    if ($this->aiServiceClient->healthCheck()) {
+      try {
+        $results = $this->aiServiceClient->generateSlideImages($slides);
+        if (!empty(array_filter($results))) {
+          return $results;
+        }
+
+        Log::warning('AI Service slide image generation returned no usable images, falling back to direct OpenAI');
+      } catch (\Exception $e) {
+        Log::warning('AI Service slide image generation failed, falling back to direct OpenAI', [
+          'error' => $e->getMessage(),
+        ]);
+      }
+    }
+
+    return $this->openAIService->generateSlideImages($slides);
   }
 
   /**

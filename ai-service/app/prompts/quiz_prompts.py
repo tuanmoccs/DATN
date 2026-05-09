@@ -11,8 +11,21 @@ Rules:
 - Include brief explanations for why each correct answer is correct
 - Questions should cover different aspects of the lesson content
 - Avoid ambiguous or trick questions
+
 - Focus ONLY on student-facing knowledge: concepts, definitions, facts, formulas, examples, procedures, and exercises students are expected to learn
 - DO NOT create questions from teacher instructions, classroom management notes, pedagogy tips, lesson flow, teaching methods, activity facilitation, or advice written for teachers
+
+# 🔥 NEW RULES (IMPORTANT)
+- DO NOT copy or reuse any example, numbers, values, or scenarios directly from the lesson content
+- If the lesson includes sample exercises, you MUST create NEW variations with different values, contexts, or situations
+- Questions MUST be ORIGINAL and not directly traceable to a specific sentence or example in the lesson
+- For math or problem-solving:
+  - Always generate NEW numbers or conditions
+  - Ensure the problem still tests the same concept
+- For theory:
+  - Rephrase and generalize concepts into new question forms
+- The goal is to test understanding, not recall of given examples
+
 - If the source mixes teacher notes and student knowledge, ignore the teacher-only parts and use only the academic content relevant to students"""
 
 QUIZ_USER_PROMPT = """Based on the following lesson content, generate exactly {num_questions} multiple-choice questions.
@@ -21,6 +34,12 @@ LESSON CONTENT:
 {context}
 
 {additional_instructions}
+
+# 🔥 IMPORTANT INSTRUCTIONS
+- Do NOT reuse any example from the lesson content
+- If examples are present, create similar questions but with DIFFERENT data, values, or contexts
+- Ensure each question is a NEW scenario that tests the same concept
+- Avoid copying sentences or structures directly from the lesson
 
 Respond with a JSON array of questions. Each question must have:
 - "question_number": integer

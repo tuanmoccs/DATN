@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AiServiceClient
 {
@@ -210,6 +211,66 @@ class AiServiceClient
     ]);
 
     return $response['result'] ?? null;
+  }
+
+  /**
+   * Sinh hình ảnh cho slide thông qua Python AI Service.
+   */
+  public function generateSlideImage(string $prompt): ?string
+  {
+    $response = $this->invokeAgent('image', [
+      'prompt' => $prompt,
+    ]);
+
+    $result = $response['result'] ?? null;
+    if (!$result || !($result['success'] ?? false)) {
+      Log::warning('AI Service: slide image generation failed', [
+        'prompt' => mb_substr($prompt, 0, 200),
+        'message' => $result['message'] ?? 'Unknown error',
+      ]);
+      return null;
+    }
+
+    $imageUrl = $result['image_url'] ?? null;
+    if (empty($imageUrl)) {
+      return null;
+    }
+
+    try {
+      $imageContent = Http::timeout($this->timeout)->get($imageUrl)->body();
+      $fileName = 'slides/' . Str::uuid() . '.png';
+      Storage::disk('public')->put($fileName, $imageContent);
+
+      return '/storage/' . $fileName;
+    } catch (\Exception $e) {
+      Log::warning('AI Service: slide image download failed', [
+        'error' => $e->getMessage(),
+        'image_url' => $imageUrl,
+      ]);
+      return null;
+    }
+  }
+
+  /**
+   * Sinh hình ảnh cho nhiều slide thông qua Python AI Service.
+   */
+  public function generateSlideImages(array $slides): array
+  {
+    $results = [];
+
+    foreach ($slides as $index => $slide) {
+      if (empty($slide['image_prompt'])) {
+        continue;
+      }
+
+      if ($index > 0) {
+        sleep(2);
+      }
+
+      $results[$slide['order']] = $this->generateSlideImage($slide['image_prompt']);
+    }
+
+    return $results;
   }
 
   /**
