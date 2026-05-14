@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import API_CONFIG from '../config/api';
 
 // ==========================================
 // Types
@@ -121,13 +122,40 @@ export interface QuizResultData {
 // Service
 // ==========================================
 
+const STORAGE_BASE_URL = API_CONFIG.BASE_URL.replace(/\/api\/?$/, '/storage');
+
+const normalizeImageUrl = (imageUrl: string | null): string | null => {
+  if (!imageUrl) return null;
+  if (/^(https?:)?\/\//.test(imageUrl) || imageUrl.startsWith('data:image')) {
+    return imageUrl;
+  }
+  if (imageUrl.startsWith('/storage/')) {
+    return `${STORAGE_BASE_URL}${imageUrl.replace('/storage', '')}`;
+  }
+  if (imageUrl.startsWith('storage/')) {
+    return `${STORAGE_BASE_URL}/${imageUrl.replace(/^storage\//, '')}`;
+  }
+  return imageUrl;
+};
+
+const normalizeLessonDetail = (lesson: LessonDetail): LessonDetail => ({
+  ...lesson,
+  slides: lesson.slides.map(slide => ({
+    ...slide,
+    image_url: normalizeImageUrl(slide.image_url),
+  })),
+});
+
 const lessonService = {
   /**
    * Lấy chi tiết bài học (slides + quiz info + progress)
    */
   getLessonDetail: async (lessonId: number): Promise<{success: boolean; data: LessonDetail}> => {
     const response = await apiClient.get(`/student/lessons/${lessonId}`);
-    return response.data;
+    return {
+      ...response.data,
+      data: normalizeLessonDetail(response.data.data),
+    };
   },
 
   /**

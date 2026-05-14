@@ -119,10 +119,29 @@ class AiServiceClient
   /**
    * Send an assignment submission to the Python AI Service for extraction + grading.
    */
-  public function gradeAssignmentSubmission(array $assignment, iterable $attachments): array
+  public function gradeAssignmentSubmission(array $assignment, iterable $attachments, iterable $referenceFiles = []): array
   {
     $request = Http::timeout($this->timeout)
       ->withHeaders($this->headers());
+
+    foreach ($referenceFiles as $file) {
+      $fullPath = Storage::disk('public')->path($file->file_path);
+
+      if (!file_exists($fullPath)) {
+        Log::warning('AI Service: assignment reference file not found', [
+          'file_id' => $file->id,
+          'file_path' => $file->file_path,
+        ]);
+        continue;
+      }
+
+      $request = $request->attach(
+        'reference_files',
+        file_get_contents($fullPath),
+        $file->file_name,
+        ['Content-Type' => $file->mime_type ?: 'application/octet-stream']
+      );
+    }
 
     foreach ($attachments as $attachment) {
       $fullPath = Storage::disk('public')->path($attachment->file_path);
@@ -237,7 +256,12 @@ class AiServiceClient
     }
 
     try {
-      $imageContent = Http::timeout($this->timeout)->get($imageUrl)->body();
+      if (str_starts_with($imageUrl, 'data:image')) {
+        $imageContent = $this->decodeDataImage($imageUrl);
+      } else {
+        $imageContent = Http::timeout($this->timeout)->get($imageUrl)->body();
+      }
+
       $fileName = 'slides/' . Str::uuid() . '.png';
       Storage::disk('public')->put($fileName, $imageContent);
 
@@ -343,5 +367,19 @@ class AiServiceClient
     }
 
     throw new \RuntimeException("Stored file not found: {$filePath}");
+  }
+
+  private function decodeDataImage(string $dataUrl): string
+  {
+    if (!preg_match('/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/', $dataUrl, $matches)) {
+      throw new \RuntimeException('Invalid image data URL returned by AI service.');
+    }
+
+    $decoded = base64_decode($matches[1], true);
+    if ($decoded === false) {
+      throw new \RuntimeException('Invalid base64 image returned by AI service.');
+    }
+
+    return $decoded;
   }
 }

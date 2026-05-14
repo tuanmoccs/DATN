@@ -26,15 +26,26 @@ Description: {assignment_description}
 Instructions: {assignment_instructions}
 Maximum Score: {max_score}
 
+ASSIGNMENT REFERENCE MATERIALS / TEACHER ATTACHMENTS
+{assignment_reference_text}
+
 STUDENT ANSWER
 {student_answer}
 
 GRADING CRITERIA
-1. Understanding of the topic (25%)
-2. Completeness of the answer (25%)
-3. Accuracy of information (25%)
-4. Clarity and organization (15%)
-5. Creativity and critical thinking (10%)
+1. Correctly answers the assignment requirements and follows instructions (30%)
+2. Accuracy compared with the teacher reference materials and expected concepts (30%)
+3. Completeness of the answer (20%)
+4. Clarity and organization (10%)
+5. Reasoning, creativity, and critical thinking (10%)
+
+Important:
+- If teacher attachments are provided, use them as the primary grading source of truth.
+- If teacher attachments conflict with the title, description, or instructions, prioritize the teacher attachments.
+- Treat title, description, and instructions as supplementary context when teacher attachments are present.
+- Do not grade only by general knowledge. Compare the student answer against the assignment requirements.
+- If reference materials are empty, grade from the title, description, and instructions only.
+- Mention important missing requirements in weaknesses and suggestions.
 
 Return only a valid JSON object with this exact structure:
 {{
@@ -56,6 +67,7 @@ async def grade_assignment(request: AssignmentGradeRequest) -> AssignmentGradeRe
             max_score=request.max_score,
             percentage=0,
             extracted_text="",
+            reference_extracted_text=request.assignment_reference_text,
             message="No readable submission content found.",
         )
 
@@ -83,15 +95,24 @@ async def grade_assignment(request: AssignmentGradeRequest) -> AssignmentGradeRe
         suggestions=_normalize_string_list(parsed.get("suggestions", [])),
         grade_letter=str(parsed.get("grade_letter") or _grade_letter(percentage)).strip(),
         extracted_text=request.student_answer,
+        reference_extracted_text=request.assignment_reference_text,
         message="Assignment graded successfully",
     )
 
 
 async def extract_submission_text(files: list[UploadFile]) -> str:
+    return await extract_files_text(files, default_filename="submission")
+
+
+async def extract_reference_text(files: list[UploadFile]) -> str:
+    return await extract_files_text(files, default_filename="assignment_reference")
+
+
+async def extract_files_text(files: list[UploadFile], default_filename: str) -> str:
     content_parts: list[str] = []
 
     for file in files:
-        filename = file.filename or "submission"
+        filename = file.filename or default_filename
         file_bytes = await file.read()
 
         try:
@@ -105,7 +126,7 @@ async def extract_submission_text(files: list[UploadFile]) -> str:
             if text.strip():
                 content_parts.append(f"File: {filename}\n{text.strip()}")
         except Exception as exc:
-            logger.warning("Failed to extract assignment attachment %s: %s", filename, exc)
+            logger.warning("Failed to extract assignment file %s: %s", filename, exc)
 
     return "\n\n".join(content_parts)
 

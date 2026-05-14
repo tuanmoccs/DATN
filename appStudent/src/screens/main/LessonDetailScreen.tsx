@@ -95,6 +95,7 @@ const LessonDetailScreen: React.FC = () => {
   const progressPercent = lesson.progress.total_slides > 0
     ? Math.round((lesson.progress.slides_viewed / lesson.progress.total_slides) * 100)
     : 0;
+  const previewSlideImageUrl = lesson.slides.find(slide => slide.image_url)?.image_url;
 
   return (
     <View style={styles.container}>
@@ -177,10 +178,10 @@ const LessonDetailScreen: React.FC = () => {
                 {lesson.progress.slides_viewed} / {lesson.progress.total_slides} slide đã xem
               </Text>
 
-              {/* Preview first slide image */}
-              {lesson.slides[0]?.image_url && (
+              {/* Preview first available slide image */}
+              {previewSlideImageUrl && (
                 <Image
-                  source={{uri: lesson.slides[0].image_url}}
+                  source={{uri: previewSlideImageUrl}}
                   style={styles.slidePreview}
                   resizeMode="cover"
                 />

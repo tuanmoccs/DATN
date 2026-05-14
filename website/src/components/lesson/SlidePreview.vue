@@ -65,8 +65,9 @@
               class="text-blue-100 text-sm md:text-base whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               {{ currentSlide.content }}
             </div>
-            <div class="flex justify-center">
-              <img :src="currentSlide.image_url" class="rounded-xl shadow-xl object-cover max-h-[320px]" />
+            <div v-if="getSlideImageUrl(currentSlide)" class="flex justify-center mt-4">
+              <img :src="getSlideImageUrl(currentSlide)" :alt="currentSlide.title"
+                class="rounded-xl shadow-xl object-cover max-h-[320px] max-w-full" />
             </div>
           </div>
 
@@ -94,9 +95,14 @@
               ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
               : 'border-gray-200 hover:border-gray-300 opacity-70 hover:opacity-100'
           ]">
-            <div class="w-full h-full bg-gradient-to-br from-blue-600 to-blue-800 p-2 flex flex-col justify-end">
+            <div class="w-full h-full bg-gradient-to-br from-blue-600 to-blue-800 p-2 flex flex-col justify-end relative">
+              <img v-if="getSlideImageUrl(slide)" :src="getSlideImageUrl(slide)" :alt="slide.title"
+                class="absolute inset-0 w-full h-full object-cover opacity-45" />
+              <div class="absolute inset-0 bg-blue-900/35"></div>
+              <div class="relative">
               <span class="text-[10px] text-blue-200 font-mono">{{ slide.order }}</span>
               <span class="text-[11px] text-white font-medium leading-tight line-clamp-2">{{ slide.title }}</span>
+              </div>
             </div>
           </button>
         </div>
@@ -138,8 +144,9 @@
               <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">{{ currentSlide.title }}</h2>
               <div class="text-blue-100 text-lg md:text-xl whitespace-pre-line leading-relaxed">{{ currentSlide.content
               }}</div>
-              <div class="flex justify-center">
-                <img :src="currentSlide.image_url" class="rounded-xl shadow-xl object-cover max-h-[320px]" />
+              <div v-if="getSlideImageUrl(currentSlide)" class="flex justify-center mt-6">
+                <img :src="getSlideImageUrl(currentSlide)" :alt="currentSlide.title"
+                  class="rounded-xl shadow-xl object-cover max-h-[320px] max-w-full" />
               </div>
             </div>
 
@@ -185,8 +192,18 @@ const regenerating = ref(false)
 const currentIndex = ref(0)
 const fullscreen = ref(false)
 const thumbStrip = ref(null)
+const storageBaseUrl = (import.meta.env.VITE_STORAGE_ENDPOINT || 'http://localhost:8000/storage').replace(/\/$/, '')
 
 const currentSlide = computed(() => props.slides[currentIndex.value] || {})
+
+const getSlideImageUrl = (slide) => {
+  const imageUrl = slide?.image_url
+  if (!imageUrl) return ''
+  if (/^(https?:)?\/\//.test(imageUrl) || imageUrl.startsWith('data:image')) return imageUrl
+  if (imageUrl.startsWith('/storage/')) return `${storageBaseUrl}${imageUrl.replace('/storage', '')}`
+  if (imageUrl.startsWith('storage/')) return `${storageBaseUrl}/${imageUrl.replace(/^storage\//, '')}`
+  return imageUrl
+}
 
 const goTo = (idx) => {
   if (idx >= 0 && idx < props.slides.length) {

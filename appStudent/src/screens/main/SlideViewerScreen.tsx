@@ -125,8 +125,8 @@ const SlideViewerScreen: React.FC = () => {
             {slide.title}
           </Text>
 
-          {/* Image (if layout has image) */}
-          {slide.image_url && (slide.layout === 'image' || slide.layout === 'two_column') && (
+          {/* Image */}
+          {slide.image_url && (
             <Image
               source={{uri: slide.image_url}}
               style={slide.layout === 'image' ? styles.slideImageFull : styles.slideImageHalf}

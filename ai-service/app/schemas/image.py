@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ImageGenerateRequest(BaseModel):
@@ -13,3 +13,8 @@ class ImageGenerateResponse(BaseModel):
     image_url: str = ""
     revised_prompt: str = ""
     message: str = ""
+
+    @field_validator("prompt", "image_url", "revised_prompt", "message", mode="before")
+    @classmethod
+    def none_to_empty_string(cls, value):
+        return "" if value is None else value

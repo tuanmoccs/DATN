@@ -9,7 +9,10 @@ from langchain_core.messages import HumanMessage
 from app.core.dependencies import get_llm
 
 PDF_TEXT_LAYER_MIN_CHARS = 30
-PDF_OCR_MAX_PAGES = 12
+PDF_OCR_MAX_PAGES = 30
+PDF_TEXT_MAX_SUSPICIOUS_RATIO = 0.08
+PDF_TEXT_MAX_CYRILLIC_RATIO = 0.02
+PDF_TEXT_MAX_CONTROL_RATIO = 0.01
 
 
 def extract_text_from_file(file_path: str, content_type: str) -> str:
@@ -72,7 +75,7 @@ async def _extract_pdf_bytes_with_fallback(file_bytes: bytes) -> str:
         for page_index, page in enumerate(doc):
             page_text = page.get_text().strip()
 
-            if len(page_text) >= PDF_TEXT_LAYER_MIN_CHARS:
+            if _is_readable_pdf_text(page_text):
                 text_parts.append(page_text)
                 continue
 
@@ -85,14 +88,49 @@ async def _extract_pdf_bytes_with_fallback(file_bytes: bytes) -> str:
                 ocr_text = await _ocr_pdf_page(page)
             except Exception:
                 ocr_text = ""
-            merged_text = "\n".join(part for part in [page_text, ocr_text] if part.strip()).strip()
-
-            if merged_text:
-                text_parts.append(merged_text)
+            if ocr_text.strip():
+                text_parts.append(ocr_text.strip())
+            elif page_text:
+                text_parts.append(page_text)
     finally:
         doc.close()
 
     return "\n\n".join(part for part in text_parts if part.strip())
+
+
+def _is_readable_pdf_text(text: str) -> bool:
+    normalized = text.strip()
+    if len(normalized) < PDF_TEXT_LAYER_MIN_CHARS:
+        return False
+
+    total = len(normalized)
+    if total == 0:
+        return False
+
+    control_chars = sum(1 for char in normalized if _is_control_char(char))
+    cyrillic_chars = sum(1 for char in normalized if "\u0400" <= char <= "\u04ff")
+    suspicious_chars = sum(1 for char in normalized if _is_suspicious_pdf_char(char))
+
+    return (
+        control_chars / total <= PDF_TEXT_MAX_CONTROL_RATIO
+        and cyrillic_chars / total <= PDF_TEXT_MAX_CYRILLIC_RATIO
+        and suspicious_chars / total <= PDF_TEXT_MAX_SUSPICIOUS_RATIO
+    )
+
+
+def _is_control_char(char: str) -> bool:
+    return ord(char) < 32 and char not in "\n\r\t"
+
+
+def _is_suspicious_pdf_char(char: str) -> bool:
+    codepoint = ord(char)
+    if _is_control_char(char):
+        return True
+    if "\u0400" <= char <= "\u04ff":
+        return True
+    if char in {"�", "□"}:
+        return True
+    return codepoint in {0xFFFD, 0x25A1}
 
 
 def _extract_docx(path: Path) -> str:
@@ -129,9 +167,10 @@ async def _ocr_pdf_page(page: fitz.Page) -> str:
         {
             "type": "text",
             "text": (
-                "Extract all readable text from this document page. "
+                "Extract all readable text from this Vietnamese textbook page. "
                 "Return plain text only. Preserve headings, formulas, bullet points, "
-                "and Vietnamese diacritics when possible. Do not summarize."
+                "page numbers, questions, and Vietnamese diacritics. Do not summarize. "
+                "Ignore decorative images unless they contain labels or captions."
             ),
         },
         {

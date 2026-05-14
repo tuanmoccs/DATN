@@ -630,6 +630,7 @@ class AssignmentService
   private function performAIGrading(AssignmentSubmission $submission): Grading
   {
     $assignment = $submission->assignment;
+    $assignment->loadMissing('files');
 
     // Tạo hoặc cập nhật grading record
     $grading = $submission->grading ?? new Grading([
@@ -648,7 +649,7 @@ class AssignmentService
         'description' => $assignment->description,
         'instructions' => $assignment->instructions,
         'max_score' => $assignment->max_score,
-      ], $submission->attachments);
+      ], $submission->attachments, $assignment->files);
 
       // Cập nhật kết quả AI
       $grading->update([

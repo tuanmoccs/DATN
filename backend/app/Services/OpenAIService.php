@@ -169,26 +169,36 @@ class OpenAIService
 
     try {
       $response = $this->client->images()->create([
-        'model' => config('openai.image_model', 'dall-e-3'),
+        'model' => config('openai.image_model', 'gpt-image-1'),
         'prompt' => $imagePrompt,
         'n' => 1,
-        'size' => config('openai.image_size', '1792x1024'),
-        'quality' => config('openai.image_quality', 'standard'),
-        'response_format' => 'url',
+        'size' => config('openai.image_size', '1536x1024'),
+        'quality' => config('openai.image_quality', 'medium'),
       ]);
 
-      $imageUrl = $response->data[0]->url;
+      $image = $response->data[0] ?? null;
+      if (!$image) {
+        return null;
+      }
+
+      $imageUrl = $image->url ?? null;
+      $b64Json = $image->b64Json ?? ($image->{'b64_json'} ?? null);
 
       // Download image và lưu vào storage/app/public/slides/
-      $imageContent = Http::timeout(30)->get($imageUrl)->body();
+      if (!empty($b64Json)) {
+        $imageContent = base64_decode($b64Json, true);
+        if ($imageContent === false) {
+          return null;
+        }
+      } elseif (!empty($imageUrl)) {
+        $imageContent = Http::timeout(30)->get($imageUrl)->body();
+      } else {
+        return null;
+      }
 
-      $fileName = 'slides/' . Str::uuid() . '.png';
-      Storage::disk('public')->put($fileName, $imageContent);
-
-      // Trả về URL public để frontend hiển thị
-      return '/storage/' . $fileName;
+      return $this->storeSlideImage($imageContent);
     } catch (\Exception $e) {
-      Log::warning('DALL-E image generation failed', [
+      Log::warning('Slide image generation failed', [
         'error' => $e->getMessage(),
         'prompt' => substr($imagePrompt, 0, 200),
       ]);
@@ -216,6 +226,14 @@ class OpenAIService
     }
 
     return $results;
+  }
+
+  private function storeSlideImage(string $imageContent): string
+  {
+    $fileName = 'slides/' . Str::uuid() . '.png';
+    Storage::disk('public')->put($fileName, $imageContent);
+
+    return '/storage/' . $fileName;
   }
 
   /**

@@ -437,8 +437,6 @@ class LessonService
       }
 
       // Sinh hình ảnh cho slides có image_prompt
-      $slideImages = $this->generateSlideImages($slides);
-
       $presentation = $lesson->presentation;
       if (!$presentation) {
         $presentation = $this->presentationRepository->create([
@@ -450,17 +448,20 @@ class LessonService
         ]);
       }
 
+      $createdSlides = [];
       foreach ($slides as $slideData) {
-        PresentationSlide::create([
+        $createdSlides[$slideData['order']] = PresentationSlide::create([
           'presentation_id' => $presentation->id,
           'order' => $slideData['order'],
           'title' => $this->cleanText($slideData['title']),
           'content' => $this->cleanText($slideData['content']),
           'notes' => $this->cleanText($slideData['notes'] ?? null),
           'layout' => $slideData['layout'] ?? 'content',
-          'image_url' => $slideImages[$slideData['order']] ?? null,
+          'image_url' => null,
         ]);
       }
+
+      $this->attachGeneratedSlideImages($slides, $createdSlides);
 
       $presentation->load('slides');
 
@@ -653,19 +654,20 @@ class LessonService
         ]);
 
         // Sinh hình ảnh cho slides có image_prompt
-        $slideImages = $this->generateSlideImages($slides);
-
+        $createdSlides = [];
         foreach ($slides as $slideData) {
-          PresentationSlide::create([
+          $createdSlides[$slideData['order']] = PresentationSlide::create([
             'presentation_id' => $presentation->id,
             'order' => $slideData['order'],
             'title' => $this->cleanText($slideData['title']),
             'content' => $this->cleanText($slideData['content']),
             'notes' => $this->cleanText($slideData['notes'] ?? null),
             'layout' => $slideData['layout'] ?? 'content',
-            'image_url' => $slideImages[$slideData['order']] ?? null,
+            'image_url' => null,
           ]);
         }
+
+        $this->attachGeneratedSlideImages($slides, $createdSlides);
 
         $result['slides'] = true;
         $result['slides_count'] = count($slides);
@@ -792,7 +794,7 @@ class LessonService
             ? implode("\n", $slide['bullet_points'])
             : ($slide['bullet_points'] ?? ''),
           'notes' => $slide['speaker_notes'] ?? null,
-          'layout' => 'content',
+          'layout' => !empty($slide['image_suggestion'] ?? null) ? 'two_column' : 'content',
           'image_prompt' => $slide['image_suggestion'] ?? null,
         ];
       })->toArray();
@@ -855,27 +857,54 @@ class LessonService
       return [];
     }
 
-    $slidesWithPrompt = array_values(array_filter($slides, fn($slide) => !empty($slide['image_prompt'] ?? null)));
+    $slidesWithPrompt = array_slice(
+      array_values(array_filter($slides, fn($slide) => !empty($slide['image_prompt'] ?? null))),
+      0,
+      2
+    );
+
     if (empty($slidesWithPrompt)) {
       return [];
     }
 
     if ($this->aiServiceClient->healthCheck()) {
       try {
-        $results = $this->aiServiceClient->generateSlideImages($slides);
+        $results = $this->aiServiceClient->generateSlideImages($slidesWithPrompt);
         if (!empty(array_filter($results))) {
           return $results;
         }
 
-        Log::warning('AI Service slide image generation returned no usable images, falling back to direct OpenAI');
+        Log::warning('AI Service slide image generation returned no usable images');
+        return [];
       } catch (\Exception $e) {
-        Log::warning('AI Service slide image generation failed, falling back to direct OpenAI', [
+        Log::warning('AI Service slide image generation failed', [
           'error' => $e->getMessage(),
         ]);
+        return [];
       }
     }
 
-    return $this->openAIService->generateSlideImages($slides);
+    Log::warning('AI Service is unavailable, skipping slide image generation');
+    return [];
+  }
+
+  private function attachGeneratedSlideImages(array $slides, array $createdSlides): void
+  {
+    try {
+      $slideImages = $this->generateSlideImages($slides);
+
+      foreach ($slideImages as $order => $imageUrl) {
+        if (empty($imageUrl) || empty($createdSlides[$order])) {
+          continue;
+        }
+
+        $createdSlides[$order]->update(['image_url' => $imageUrl]);
+      }
+    } catch (\Throwable $e) {
+      Log::warning('Slide image generation skipped after slides were saved', [
+        'error' => $e->getMessage(),
+      ]);
+    }
   }
 
   /**
