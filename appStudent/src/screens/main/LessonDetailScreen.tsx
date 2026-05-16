@@ -14,6 +14,7 @@ import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import lessonService, {LessonDetail, QuizOverview} from '../../services/lessonService';
 import {MainStackParamList} from '../../navigation/MainNavigator';
+import {getImageUrl} from '../../config/api';
 
 type LessonDetailRouteProp = RouteProp<MainStackParamList, 'LessonDetail'>;
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -95,7 +96,7 @@ const LessonDetailScreen: React.FC = () => {
   const progressPercent = lesson.progress.total_slides > 0
     ? Math.round((lesson.progress.slides_viewed / lesson.progress.total_slides) * 100)
     : 0;
-  const previewSlideImageUrl = lesson.slides.find(slide => slide.image_url)?.image_url;
+  const previewSlideImageUrl = getImageUrl(lesson.slides.find(slide => slide.image_url)?.image_url);
 
   return (
     <View style={styles.container}>
