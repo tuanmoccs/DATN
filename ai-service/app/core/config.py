@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
 
+    # RAG retrieval
+    rag_score_threshold: float = 0.45
+    rag_candidate_multiplier: int = 4
+    rag_max_context_chars: int = 12000
+    rag_low_confidence_fallback: bool = True
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

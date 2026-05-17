@@ -73,17 +73,29 @@ const avatarFailed = ref(false)
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=2563EB&color=fff&bold=true&name='
 
-const currentUser = computed(() => {
+const STORAGE_ENDPOINT = import.meta.env.VITE_STORAGE_ENDPOINT || ''
+
+// Use a ref instead of computed so we can refresh on custom events
+const currentUser = ref(null)
+
+const loadUserInfo = () => {
   const info = localStorage.getItem('user_info')
-  return info ? JSON.parse(info) : null
-})
+  currentUser.value = info ? JSON.parse(info) : null
+  // Reset avatar error state when user info changes
+  avatarFailed.value = false
+}
 
 const avatarUrl = computed(() => {
   if (avatarFailed.value || !currentUser.value?.avatar) {
     const name = encodeURIComponent(currentUser.value?.name || 'T')
     return DEFAULT_AVATAR + name
   }
-  return currentUser.value.avatar
+  // Avatar is stored as a relative path (e.g. 'avatars/xxx.jpg'), prepend storage URL
+  const avatar = currentUser.value.avatar
+  if (avatar.startsWith('http')) {
+    return avatar
+  }
+  return `${STORAGE_ENDPOINT}/${avatar}`
 })
 
 const onAvatarError = () => {
@@ -117,8 +129,20 @@ const handleClickOutside = (e) => {
   }
 }
 
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+// Listen for profile updates from ProfileCard
+const handleUserInfoUpdated = () => {
+  loadUserInfo()
+}
+
+onMounted(() => {
+  loadUserInfo()
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('user-info-updated', handleUserInfoUpdated)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('user-info-updated', handleUserInfoUpdated)
+})
 
 const handleLogout = async () => {
   dropdownVisible.value = false
