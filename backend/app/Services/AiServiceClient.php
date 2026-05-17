@@ -71,7 +71,6 @@ class AiServiceClient
   public function processDocumentFile(int $lessonId, string $filePath, string $fileName): array
   {
     $fullPath = $this->resolveStoredFilePath($filePath);
-
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())
       ->attach('file', file_get_contents($fullPath), $fileName)
@@ -97,6 +96,7 @@ class AiServiceClient
    */
   public function extractFileText(string $filePath, string $fileName): string
   {
+
     $fullPath = $this->resolveStoredFilePath($filePath);
 
     $response = Http::timeout($this->timeout)
