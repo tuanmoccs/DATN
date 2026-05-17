@@ -3,13 +3,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-bold text-gray-800">Quản lý lớp học</h2>
-        <p class="text-gray-500 mt-1">Tạo và quản lý các lớp học của bạn</p>
+        <h2 class="text-2xl font-bold text-gray-800">Classroom management</h2>
+        <p class="text-gray-500 mt-1">Create and manage your classes</p>
       </div>
       <button @click="showCreateModal = true"
         class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
         <i class="fas fa-plus"></i>
-        Tạo lớp học
+        Create Class
       </button>
     </div>
 
@@ -21,11 +21,11 @@
     <!-- Empty State -->
     <div v-else-if="classes.length === 0" class="text-center py-16">
       <i class="fas fa-book text-5xl text-gray-300 mb-4"></i>
-      <h3 class="text-lg font-semibold text-gray-600 mb-2">Chưa có lớp học nào</h3>
-      <p class="text-gray-400 mb-6">Tạo lớp học đầu tiên để bắt đầu giảng dạy</p>
+      <h3 class="text-lg font-semibold text-gray-600 mb-2">No classes available</h3>
+      <p class="text-gray-400 mb-6">Create your first class to start teaching</p>
       <button @click="showCreateModal = true"
         class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
-        <i class="fas fa-plus mr-2"></i>Tạo lớp học
+        <i class="fas fa-plus mr-2"></i>Create Class
       </button>
     </div>
 
@@ -41,14 +41,14 @@
               <h3 class="text-lg font-semibold text-gray-800 truncate group-hover:text-blue-600 transition-colors">
                 {{ cls.name }}
               </h3>
-              <p class="text-sm text-gray-500 mt-0.5">{{ cls.semester || 'Chưa xác định' }}</p>
+              <p class="text-sm text-gray-500 mt-0.5">{{ cls.semester || 'Not specified' }}</p>
             </div>
             <span :class="statusClass(cls.status)"
               class="px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-3">
               {{ statusLabel(cls.status) }}
             </span>
           </div>
-          <p class="text-sm text-gray-500 line-clamp-2">{{ cls.description || 'Không có mô tả' }}</p>
+          <p class="text-sm text-gray-500 line-clamp-2">{{ cls.description || 'No description' }}</p>
         </div>
 
         <!-- Card Body -->
@@ -56,10 +56,10 @@
           <!-- Class Code -->
           <div class="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg">
             <i class="fas fa-key text-blue-500"></i>
-            <span class="text-sm text-blue-700 font-medium">Mã lớp:</span>
+            <span class="text-sm text-blue-700 font-medium">Class Code:</span>
             <code class="text-sm font-mono font-bold text-blue-800 tracking-wider">{{ cls.code }}</code>
             <button @click.stop="copyCode(cls.code)" class="ml-auto text-blue-500 hover:text-blue-700 transition-colors"
-              title="Sao chép mã">
+              title="Copy code">
               <i class="fas fa-copy"></i>
             </button>
           </div>
@@ -68,15 +68,15 @@
           <div class="flex items-center gap-4 text-sm">
             <div class="flex items-center gap-1.5 text-gray-600">
               <i class="fas fa-user-graduate text-green-500"></i>
-              <span>{{ cls.student_count || 0 }} học sinh</span>
+              <span>{{ cls.student_count || 0 }} students</span>
             </div>
             <div v-if="cls.pending_count > 0" class="flex items-center gap-1.5 text-orange-600">
               <i class="fas fa-clock"></i>
-              <span>{{ cls.pending_count }} chờ duyệt</span>
+              <span>{{ cls.pending_count }} pending</span>
             </div>
             <div v-if="cls.max_students" class="flex items-center gap-1.5 text-gray-400 ml-auto">
               <i class="fas fa-users"></i>
-              <span>Tối đa {{ cls.max_students }}</span>
+              <span>Max {{ cls.max_students }}</span>
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
           <!-- Header -->
           <div class="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 class="text-xl font-bold text-gray-800">Tạo lớp học mới</h3>
+            <h3 class="text-xl font-bold text-gray-800">Create New Class</h3>
             <button @click="closeCreateModal" class="text-gray-400 hover:text-gray-600 transition-colors">
               <i class="fas fa-times text-lg"></i>
             </button>
@@ -104,41 +104,41 @@
             <!-- Name -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                Tên lớp học <span class="text-red-500">*</span>
+                Class Name <span class="text-red-500">*</span>
               </label>
-              <input v-model="form.name" type="text" placeholder="VD: Toán cao cấp - Nhóm 01"
+              <input v-model="form.name" type="text" placeholder="e.g., Advanced Math - Group 01"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                 required />
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Mô tả</label>
-              <textarea v-model="form.description" rows="3" placeholder="Mô tả ngắn về lớp học..."
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <textarea v-model="form.description" rows="3" placeholder="Short description about the class..."
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm resize-none"></textarea>
             </div>
 
             <!-- Semester & Max Students -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Học kỳ</label>
-                <input v-model="form.semester" type="text" placeholder="VD: HK1 2025-2026"
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Semester</label>
+                <input v-model="form.semester" type="text" placeholder="e.g., HK1 2025-2026"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Sĩ số tối đa</label>
-                <input v-model.number="form.max_students" type="number" min="1" max="500" placeholder="VD: 50"
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Max Students</label>
+                <input v-model.number="form.max_students" type="number" min="1" max="500" placeholder="e.g., 50"
                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm" />
               </div>
             </div>
 
             <!-- Status -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Trạng thái</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
               <select v-model="form.status"
                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm">
-                <option value="active">Đang hoạt động</option>
-                <option value="draft">Bản nháp</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
               </select>
             </div>
 
@@ -151,12 +151,12 @@
             <div class="flex items-center gap-3 pt-2">
               <button type="button" @click="closeCreateModal"
                 class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm">
-                Hủy
+                Cancel
               </button>
               <button type="submit" :disabled="creating"
                 class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 <i v-if="creating" class="fas fa-spinner fa-spin mr-2"></i>
-                {{ creating ? 'Đang tạo...' : 'Tạo lớp học' }}
+                {{ creating ? 'Creating...' : 'Create Class' }}
               </button>
             </div>
           </form>
@@ -213,8 +213,8 @@ const fetchClasses = async () => {
     const res = await api.class.getClasses()
     classes.value = res.data || []
   } catch (err) {
-    console.error('Lỗi lấy danh sách lớp:', err)
-    showToast('Không thể tải danh sách lớp học', 'error')
+    console.error('Error fetching class list:', err)
+    showToast('Unable to load class list', 'error')
   } finally {
     loading.value = false
   }
@@ -230,7 +230,7 @@ const handleCreate = async () => {
     if (!payload.description) delete payload.description
 
     await api.class.createClass(payload)
-    showToast('Tạo lớp học thành công!')
+    showToast('Class created successfully!')
     closeCreateModal()
     fetchClasses()
   } catch (err) {
@@ -238,7 +238,7 @@ const handleCreate = async () => {
     if (typeof msg === 'object') {
       createError.value = Object.values(msg).flat().join(', ')
     } else {
-      createError.value = msg || 'Có lỗi xảy ra khi tạo lớp học'
+      createError.value = msg || 'An error occurred while creating the class'
     }
   } finally {
     creating.value = false
@@ -258,14 +258,14 @@ const goToDetail = (id) => {
 const copyCode = async (code) => {
   try {
     await navigator.clipboard.writeText(code)
-    showToast('Đã sao chép mã lớp!')
+    showToast('Class code copied!')
   } catch {
-    showToast('Không thể sao chép', 'error')
+    showToast('Unable to copy', 'error')
   }
 }
 
 const statusLabel = (status) => {
-  const labels = { active: 'Hoạt động', draft: 'Bản nháp', archived: 'Lưu trữ' }
+  const labels = { active: 'Active', draft: 'Draft', archived: 'Archived' }
   return labels[status] || status
 }
 

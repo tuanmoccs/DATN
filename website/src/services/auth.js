@@ -20,16 +20,31 @@ export default ($axios) => ({
   refreshToken() {
     return $axios.$post('/auth/refresh')
   },
-  forgotPassword(email) {
-    return $axios.$post('/auth/forgot-password', { email })
+
+  // Quên mật khẩu
+  sendForgotPasswordOtp(data) {
+    return $axios.$post('/auth/forgot-password/send-otp', data)
+  },
+  verifyForgotPasswordOtp(data) {
+    return $axios.$post('/auth/forgot-password/verify-otp', data)
   },
   resetPassword(data) {
-    return $axios.$post('/auth/reset-password', data)
+    return $axios.$post('/auth/forgot-password/reset', data)
   },
-  changePassword(data) {
-    return $axios.$put('/auth/change-password', data)
+
+  // Profile
+  getProfile() {
+    return $axios.$get('/profile')
   },
   updateProfile(data) {
-    return $axios.$put('/auth/profile', data)
+    return $axios.$post('/profile/update', data)
+  },
+  uploadAvatar(formData) {
+    return $axios.$post('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  changePassword(data) {
+    return $axios.$post('/profile/change-password', data)
   },
 })

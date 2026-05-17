@@ -109,6 +109,16 @@ class ClassController extends Controller
   }
 
   /**
+   * Tìm kiếm học sinh trong lớp
+   */
+  public function searchStudents(int $classId, Request $request): JsonResponse
+  {
+    $query = $request->input('q', '');
+    $result = $this->classService->searchStudents($classId, $query, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
+  /**
    * Học sinh - Lấy danh sách lớp đã tham gia
    */
   public function studentClasses(): JsonResponse

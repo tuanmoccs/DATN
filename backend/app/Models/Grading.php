@@ -10,21 +10,29 @@ class Grading extends Model
 {
   use HasFactory;
 
+  protected $table = 'grading';
+
   protected $fillable = [
     'submission_id',
     'graded_by',
     'score',
+    'ai_suggested_score',
     'max_score',
     'percentage',
     'feedback',
+    'ai_feedback',
+    'ai_status',
+    'ai_graded_at',
     'graded_at',
   ];
 
   protected $casts = [
     'score' => 'decimal:2',
+    'ai_suggested_score' => 'decimal:2',
     'max_score' => 'integer',
     'percentage' => 'decimal:2',
     'graded_at' => 'datetime',
+    'ai_graded_at' => 'datetime',
   ];
 
   // Relationships
@@ -41,7 +49,7 @@ class Grading extends Model
   // Methods
   public function calculatePercentage(): float
   {
-    if ($this->max_score == 0) return 0;
+    if ($this->score === null || $this->max_score == 0) return 0;
     return ($this->score / $this->max_score) * 100;
   }
 

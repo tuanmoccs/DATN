@@ -38,4 +38,10 @@ export default ($axios) => ({
   removeStudent(enrollmentId) {
     return $axios.$delete(`/teacher/classes/enrollments/${enrollmentId}`)
   },
+
+  searchStudents(classId, query) {
+    return $axios.$get(`/teacher/classes/${classId}/students/search`, {
+      params: { q: query },
+    })
+  },
 })

@@ -14,6 +14,7 @@ class AuthService
 {
   private const CACHE_TTL = 300; // 10 minutes
   private const CACHE_PREFIX = 'teacher_registration_';
+  private const FORGET_PASSWORD_CACHE_PREFIX = 'forgot_password_';
 
   public function __construct(
     private readonly UserRepositoryInterface $userRepository,
@@ -218,6 +219,109 @@ class AuthService
           'message' => 'Token không hợp lệ'
         ],
         'status' => 401
+      ];
+    }
+  }
+
+  public function sendForgotPasswordOtp(array $data): array
+  {
+    try {
+      $user = $this->userRepository->findByEmailAndRole($data['email'], $data['role']);
+
+      if (!$user) {
+        return [
+          'data' => [
+            'success' => false,
+            'message' => 'Email không tồn tại trong hệ thống'
+          ],
+          'status' => 404
+        ];
+      }
+
+      $otpCode = $this->otpRepository->generate($data['email'], 'reset_password');
+
+      Mail::to($data['email'])->send(new OtpMail($otpCode, $user->name));
+
+      return [
+        'data' => [
+          'success' => true,
+          'message' => 'Mã OTP đã được gửi đến email của bạn'
+        ],
+        'status' => 200
+      ];
+    } catch (\Exception $e) {
+      return [
+        'data' => [
+          'success' => false,
+          'message' => 'Có lỗi xảy ra khi gửi email: ' . $e->getMessage()
+        ],
+        'status' => 500
+      ];
+    }
+  }
+
+  public function verifyForgotPasswordOtp(array $data): array
+  {
+    if (!$this->otpRepository->existsValid($data['email'], $data['otp'], 'reset_password')) {
+      return [
+        'data' => [
+          'success' => false,
+          'message' => 'MÃ£ OTP khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n'
+        ],
+        'status' => 400
+      ];
+    }
+
+    return [
+      'data' => [
+        'success' => true,
+        'message' => 'XÃ¡c minh OTP thÃ nh cÃ´ng'
+      ],
+      'status' => 200
+    ];
+  }
+
+  public function resetPassword(array $data): array
+  {
+    if (!$this->otpRepository->verify($data['email'], $data['otp'], 'reset_password')) {
+      return [
+        'data' => [
+          'success' => false,
+          'message' => 'Mã OTP không hợp lệ hoặc đã hết hạn'
+        ],
+        'status' => 400
+      ];
+    }
+
+    try {
+      $user = $this->userRepository->findByEmail($data['email']);
+
+      if (!$user) {
+        return [
+          'data' => [
+            'success' => false,
+            'message' => 'Người dùng không tồn tại'
+          ],
+          'status' => 404
+        ];
+      }
+
+      $user->update(['password' => Hash::make($data['password'])]);
+
+      return [
+        'data' => [
+          'success' => true,
+          'message' => 'Đặt lại mật khẩu thành công'
+        ],
+        'status' => 200
+      ];
+    } catch (\Exception $e) {
+      return [
+        'data' => [
+          'success' => false,
+          'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ],
+        'status' => 500
       ];
     }
   }

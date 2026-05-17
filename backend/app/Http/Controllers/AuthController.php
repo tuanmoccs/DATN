@@ -6,6 +6,9 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterStudentRequest;
 use App\Http\Requests\Auth\RegisterTeacherOtpRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\VerifyForgotPasswordOtpRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,6 +76,33 @@ class AuthController extends Controller
   public function refresh(): JsonResponse
   {
     $result = $this->authService->refreshToken();
+
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function sendForgotPasswordOtp(ForgotPasswordRequest $request): JsonResponse
+  {
+    $result = $this->authService->sendForgotPasswordOtp(
+      $request->validated()
+    );
+
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function verifyForgotPasswordOtp(VerifyForgotPasswordOtpRequest $request): JsonResponse
+  {
+    $result = $this->authService->verifyForgotPasswordOtp(
+      $request->validated()
+    );
+
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function resetPassword(ResetPasswordRequest $request): JsonResponse
+  {
+    $result = $this->authService->resetPassword(
+      $request->validated()
+    );
 
     return response()->json($result['data'], $result['status']);
   }

@@ -16,6 +16,12 @@ const router = createRouter({
       meta: { guest: true }
     },
     {
+      path: '/forgot-password',
+      name: 'ForgotPassword',
+      component: () => import('@/pages/ForgotPasswordPage.vue'),
+      meta: { guest: true }
+    },
+    {
       path: '/teacher',
       component: () => import('@/layouts/TeacherLayout.vue'),
       meta: { requiresAuth: true, role: 'teacher' },
@@ -35,6 +41,59 @@ const router = createRouter({
           name: 'TeacherClassDetail',
           component: () => import('@/pages/teacher/ClassDetailPage.vue'),
           props: true,
+        },
+        {
+          path: 'students',
+          name: 'TeacherStudents',
+          component: () => import('@/pages/teacher/StudentListPage.vue'),
+        },
+        {
+          path: 'lessons',
+          name: 'TeacherLessons',
+          component: () => import('@/pages/teacher/LessonsPage.vue'),
+        },
+        {
+          path: 'lessons/create',
+          name: 'TeacherLessonCreate',
+          component: () => import('@/pages/teacher/LessonCreatePage.vue'),
+        },
+        {
+          path: 'lessons/:id',
+          name: 'TeacherLessonDetail',
+          component: () => import('@/pages/teacher/LessonDetailPage.vue'),
+          props: true,
+        },
+        {
+          path: 'lesson-plans',
+          name: 'TeacherLessonPlans',
+          component: () => import('@/pages/teacher/LessonPlansPage.vue'),
+        },
+        {
+          path: 'lesson-plans/:id',
+          name: 'TeacherLessonPlanEditor',
+          component: () => import('@/pages/teacher/LessonPlanEditorPage.vue'),
+          props: true,
+        },
+        {
+          path: 'assignments',
+          name: 'TeacherAssignments',
+          component: () => import('@/pages/teacher/AssignmentsPage.vue'),
+        },
+        {
+          path: 'assignments/:id',
+          name: 'TeacherAssignmentDetail',
+          component: () => import('@/pages/teacher/AssignmentDetailPage.vue'),
+          props: true,
+        },
+        {
+          path: 'reports',
+          name: 'TeacherReports',
+          component: () => import('@/pages/teacher/ReportsPage.vue'),
+        },
+        {
+          path: 'profile',
+          name: 'TeacherProfile',
+          component: () => import('@/pages/teacher/ProfilePage.vue'),
         },
       ]
     },

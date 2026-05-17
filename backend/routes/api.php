@@ -2,6 +2,14 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LessonController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\StudentLessonController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\AiCompetencyReportController;
+use App\Http\Controllers\LessonPlanController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,11 +30,42 @@ Route::prefix('auth')->group(function () {
     Route::post('/register/teacher/verify-otp', [AuthController::class, 'registerTeacherVerifyOtp']);
     Route::post('/register/student', [AuthController::class, 'registerStudent']);
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Forgot & Reset Password
+    Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOtp']);
+    Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOtp']);
+    Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword']);
+
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+    });
 });
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // ==========================================
+    // Profile Management (cho cả Teacher & Student)
+    // ==========================================
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'getProfile']);
+        Route::post('/update', [ProfileController::class, 'updateProfile']);
+        Route::post('/avatar', [ProfileController::class, 'uploadAvatar']);
+        Route::post('/change-password', [ProfileController::class, 'changePassword']);
+    });
+
+    // ==========================================
+    // Authentication Routes
+    // ==========================================
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/refresh', [AuthController::class, 'refresh']);
+
+    // ==========================================
+    // Teacher - Dashboard
+    // ==========================================
+    Route::get('/teacher/dashboard', [DashboardController::class, 'teacherDashboard']);
+    Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
 
     // ==========================================
     // Teacher - Quản lý lớp học
@@ -37,6 +76,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [ClassController::class, 'show']);
         Route::put('/{id}', [ClassController::class, 'update']);
         Route::delete('/{id}', [ClassController::class, 'destroy']);
+        Route::get('/{classId}/students/search', [ClassController::class, 'searchStudents']);
 
         // Quản lý yêu cầu tham gia
         Route::post('/enrollments/{enrollmentId}/approve', [ClassController::class, 'approveEnrollment']);
@@ -50,4 +90,92 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/student/classes/join', [ClassController::class, 'requestJoin']);
     Route::get('/student/classes', [ClassController::class, 'studentClasses']);
     Route::get('/student/classes/{id}', [ClassController::class, 'studentClassDetail']);
+
+    // ==========================================
+    // Student - Bài học & Quiz
+    // ==========================================
+    Route::prefix('student/lessons')->group(function () {
+        Route::get('/{lessonId}', [StudentLessonController::class, 'show']);
+        Route::post('/{lessonId}/slide-progress', [StudentLessonController::class, 'updateSlideProgress']);
+    });
+    Route::prefix('student/quizzes')->group(function () {
+        Route::post('/{quizId}/start', [StudentLessonController::class, 'startQuiz']);
+        Route::post('/{quizId}/submit', [StudentLessonController::class, 'submitQuiz']);
+        Route::get('/attempts/{attemptId}/result', [StudentLessonController::class, 'getQuizResult']);
+    });
+
+    // ==========================================
+    // Teacher - Quản lý bài học
+    // ==========================================
+    Route::prefix('teacher/lessons')->group(function () {
+        // CRUD bài học
+        Route::get('/class/{classId}', [LessonController::class, 'index']);
+        Route::post('/', [LessonController::class, 'store']);
+        Route::get('/{id}', [LessonController::class, 'show']);
+        Route::post('/{id}', [LessonController::class, 'update']); // POST thay PUT vì có file upload
+        Route::delete('/{id}', [LessonController::class, 'destroy']);
+        Route::get('/class/{classId}/search', [LessonController::class, 'search']);
+
+        // AI Generation (throttle riêng, cho phép request chạy lâu)
+        Route::middleware('throttle:ai')->group(function () {
+            Route::post('/{id}/regenerate-slides', [LessonController::class, 'regenerateSlides']);
+            Route::post('/{id}/regenerate-quiz', [LessonController::class, 'regenerateQuiz']);
+        });
+    });
+
+    // ==========================================
+    // Teacher - Quản lý Quiz & Câu hỏi
+    // ==========================================
+    Route::prefix('teacher/quizzes')->group(function () {
+        Route::get('/lesson/{lessonId}', [QuizController::class, 'index']);
+        Route::get('/{id}', [QuizController::class, 'show']);
+        Route::get('/{id}/export-pdf', [QuizController::class, 'exportPDF']);
+        Route::put('/{id}', [QuizController::class, 'update']);
+        Route::delete('/{id}', [QuizController::class, 'destroy']);
+        Route::post('/{id}/publish', [QuizController::class, 'publish']);
+
+        // Quản lý câu hỏi
+        Route::post('/{quizId}/questions', [QuizController::class, 'addQuestion']);
+        Route::put('/{quizId}/questions/{questionId}', [QuizController::class, 'updateQuestion']);
+        Route::delete('/{quizId}/questions/{questionId}', [QuizController::class, 'deleteQuestion']);
+    });
+
+    Route::prefix('teacher/assignments')->group(function () {
+        Route::get('/class/{classId}', [AssignmentController::class, 'index']);
+        Route::post('/', [AssignmentController::class, 'store']);
+        Route::get('/{id}', [AssignmentController::class, 'show']);
+        Route::post('/{id}', [AssignmentController::class, 'update']); // POST vì có file upload
+        Route::delete('/{id}', [AssignmentController::class, 'destroy']);
+        Route::get('/class/{classId}/search', [AssignmentController::class, 'search']);
+
+        // Quản lý bài nộp & chấm điểm
+        Route::get('/{assignmentId}/submissions', [AssignmentController::class, 'getSubmissions']);
+        Route::get('/submissions/{submissionId}', [AssignmentController::class, 'getSubmissionDetail']);
+        Route::post('/submissions/{submissionId}/ai-grade', [AssignmentController::class, 'requestAIGrading']);
+        Route::post('/submissions/{submissionId}/grade', [AssignmentController::class, 'finalizeGrading']);
+    });
+
+    Route::prefix('teacher/competency-reports')->group(function () {
+        Route::get('/', [AiCompetencyReportController::class, 'index']);
+        Route::post('/generate', [AiCompetencyReportController::class, 'generate'])->middleware('throttle:ai');
+        Route::get('/{id}', [AiCompetencyReportController::class, 'show']);
+        Route::put('/{id}', [AiCompetencyReportController::class, 'update']);
+    });
+
+    Route::prefix('student/assignments')->group(function () {
+        Route::get('/class/{classId}', [AssignmentController::class, 'studentAssignments']);
+        Route::post('/{assignmentId}/submit', [AssignmentController::class, 'submitAssignment']);
+    });
+
+    Route::prefix('teacher/lesson-plans')->group(function () {
+        Route::get('/', [LessonPlanController::class, 'index']);
+        Route::post('/', [LessonPlanController::class, 'store']);
+        Route::get('/search', [LessonPlanController::class, 'search']);
+        Route::get('/{id}', [LessonPlanController::class, 'show']);
+        Route::put('/{id}', [LessonPlanController::class, 'update']);
+        Route::delete('/{id}', [LessonPlanController::class, 'destroy']);
+        Route::post('/{id}/upload-reference', [LessonPlanController::class, 'uploadReference']);
+        Route::post('/{id}/upload-reference-text', [LessonPlanController::class, 'uploadReferenceText']);
+        Route::post('/{id}/ai-suggest', [LessonPlanController::class, 'aiSuggest']);
+    });
 });

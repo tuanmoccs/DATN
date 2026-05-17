@@ -25,7 +25,7 @@
             @error="onAvatarError" />
           <div v-if="currentUser" class="hidden sm:block text-left">
             <p class="text-sm font-semibold text-gray-700 leading-tight">{{ currentUser.name }}</p>
-            <p class="text-xs text-gray-500">Giáo viên</p>
+            <p class="text-xs text-gray-500">Teacher</p>
           </div>
           <svg class="w-4 h-4 text-gray-400 transition-transform" :class="{ 'rotate-180': dropdownVisible }" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
@@ -44,13 +44,13 @@
               <p class="text-sm font-semibold text-gray-800">{{ currentUser?.name }}</p>
               <p class="text-xs text-gray-500 truncate">{{ currentUser?.email }}</p>
             </div>
-            <router-link to="/teacher/settings" @click="dropdownVisible = false"
+            <router-link to="/teacher/profile" @click="dropdownVisible = false"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-              <i class="fas fa-user"></i> Thông tin cá nhân
+              <i class="fas fa-user"></i> Hồ Sơ Cá Nhân
             </router-link>
             <button @click="handleLogout"
               class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left">
-              <i class="fas fa-sign-out-alt"></i> Đăng xuất
+              <i class="fas fa-sign-out-alt"></i> Đăng Xuất
             </button>
           </div>
         </Transition>
@@ -92,13 +92,13 @@ const onAvatarError = () => {
 
 const pageTitles = {
   '/teacher/dashboard': 'Dashboard',
-  '/teacher/classes': 'Lớp học',
-  '/teacher/lessons': 'Bài học',
-  '/teacher/quizzes': 'Bài kiểm tra',
-  '/teacher/assignments': 'Bài tập',
-  '/teacher/students': 'Học sinh',
-  '/teacher/reports': 'Báo cáo',
-  '/teacher/settings': 'Cài đặt',
+  '/teacher/classes': 'Lớp Học',
+  '/teacher/lessons': 'Bài Học',
+  '/teacher/quizzes': 'Quiz',
+  '/teacher/assignments': 'Bài Tập',
+  '/teacher/students': 'Học Sinh',
+  '/teacher/reports': 'Báo Cáo',
+  '/teacher/profile': 'Hồ Sơ Cá Nhân',
 }
 
 const pageTitle = computed(() => {

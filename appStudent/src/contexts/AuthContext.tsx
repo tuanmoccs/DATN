@@ -5,6 +5,7 @@ import authService, {
   LoginParams,
   RegisterParams,
 } from '../services/authService';
+import {setAuthFailureHandler} from '../services/apiClient';
 
 interface User {
   id: number;
@@ -21,6 +22,7 @@ interface AuthContextType {
   login: (params: LoginParams) => Promise<void>;
   register: (params: RegisterParams) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (userData: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,9 +35,24 @@ const saveAuthData = async (response: AuthResponse) => {
 };
 
 const clearAuthData = async () => {
-  await AsyncStorage.removeItem('access_token');
-  await AsyncStorage.removeItem('user_info');
-  await AsyncStorage.removeItem('token_expired_at');
+  await AsyncStorage.multiRemove([
+    'access_token',
+    'user_info',
+    'token_expired_at',
+  ]);
+};
+
+const persistUserData = async (user: User) => {
+  await AsyncStorage.setItem('user_info', JSON.stringify(user));
+};
+
+const isTokenExpired = (expiredAt: string | null) => {
+  if (!expiredAt) {
+    return false;
+  }
+
+  const expiredAtNumber = Number(expiredAt);
+  return !Number.isFinite(expiredAtNumber) || expiredAtNumber <= Date.now();
 };
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
@@ -44,21 +61,47 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Kiểm tra trạng thái đăng nhập khi mở app
+  useEffect(() => {
+    const syncLogout = async () => {
+      await clearAuthData();
+      setUser(null);
+      setIsLoading(false);
+    };
+
+    setAuthFailureHandler(syncLogout);
+    return () => {
+      setAuthFailureHandler(null);
+    };
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = await AsyncStorage.getItem('access_token');
-        const userInfo = await AsyncStorage.getItem('user_info');
-        if (token && userInfo) {
-          setUser(JSON.parse(userInfo));
+        const [token, userInfo, tokenExpiredAt] = await AsyncStorage.multiGet([
+          'access_token',
+          'user_info',
+          'token_expired_at',
+        ]);
+
+        const accessToken = token[1];
+        const storedUser = userInfo[1];
+        const expiresAt = tokenExpiredAt[1];
+
+        if (!accessToken || !storedUser || isTokenExpired(expiresAt)) {
+          await clearAuthData();
+          setUser(null);
+          return;
         }
+
+        setUser(JSON.parse(storedUser));
       } catch {
         await clearAuthData();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
+
     checkAuth();
   }, []);
 
@@ -82,11 +125,16 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
     try {
       await authService.logout();
     } catch {
-      // Bỏ qua lỗi logout API
+      // Ignore logout API failures and clear local session anyway.
     } finally {
       await clearAuthData();
       setUser(null);
     }
+  };
+
+  const updateUser = async (userData: User) => {
+    await persistUserData(userData);
+    setUser(userData);
   };
 
   return (
@@ -98,6 +146,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
         login,
         register,
         logout,
+        updateUser,
       }}>
       {children}
     </AuthContext.Provider>
@@ -107,7 +156,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth phải được sử dụng trong AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };

@@ -10,16 +10,18 @@ import {
   RefreshControl,
 } from 'react-native';
 import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import classService, {ClassInfo} from '../../services/classService';
 import {MainStackParamList} from '../../navigation/MainNavigator';
 
 type ClassDetailRouteProp = RouteProp<MainStackParamList, 'ClassDetail'>;
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
-type TabKey = 'info' | 'lessons' | 'students';
+type TabKey = 'info' | 'lessons' | 'assignments' | 'students';
 
 const ClassDetailScreen: React.FC = () => {
   const route = useRoute<ClassDetailRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const {classId} = route.params;
 
   const [classData, setClassData] = useState<ClassInfo | null>(null);
@@ -53,6 +55,7 @@ const ClassDetailScreen: React.FC = () => {
   const tabs: {key: TabKey; label: string; count?: number}[] = [
     {key: 'info', label: 'Thông tin'},
     {key: 'lessons', label: 'Bài học', count: classData?.lessons?.length || 0},
+    {key: 'assignments', label: 'Bài tập'},
     {
       key: 'students',
       label: 'Thành viên',
@@ -82,7 +85,7 @@ const ClassDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+      <StatusBar barStyle="light-content" backgroundColor="#0D47A1" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -146,7 +149,10 @@ const ClassDetailScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}>
         {activeTab === 'info' && renderInfoTab(classData)}
-        {activeTab === 'lessons' && renderLessonsTab(classData)}
+        {activeTab === 'lessons' && renderLessonsTab(classData, (lessonId: number) => {
+          navigation.navigate('LessonDetail', {lessonId});
+        })}
+        {activeTab === 'assignments' && renderAssignmentsTab(classData, navigation)}
         {activeTab === 'students' && renderStudentsTab(classData)}
         <View style={styles.bottomSpace} />
       </ScrollView>
@@ -235,7 +241,7 @@ const renderInfoTab = (classData: ClassInfo) => (
 );
 
 // ========== Tab: Bài học ==========
-const renderLessonsTab = (classData: ClassInfo) => {
+const renderLessonsTab = (classData: ClassInfo, onLessonPress: (lessonId: number) => void) => {
   const lessons = classData.lessons || [];
 
   if (lessons.length === 0) {
@@ -253,7 +259,11 @@ const renderLessonsTab = (classData: ClassInfo) => {
   return (
     <View style={styles.tabContent}>
       {lessons.map((lesson, index) => (
-        <TouchableOpacity key={lesson.id} style={styles.lessonCard} activeOpacity={0.7}>
+        <TouchableOpacity
+          key={lesson.id}
+          style={styles.lessonCard}
+          activeOpacity={0.7}
+          onPress={() => onLessonPress(lesson.id)}>
           <View style={styles.lessonNumber}>
             <Text style={styles.lessonNumberText}>{index + 1}</Text>
           </View>
@@ -270,6 +280,34 @@ const renderLessonsTab = (classData: ClassInfo) => {
           <Text style={styles.lessonArrow}>›</Text>
         </TouchableOpacity>
       ))}
+    </View>
+  );
+};
+
+// ========== Tab: Bài tập ==========
+const renderAssignmentsTab = (classData: ClassInfo, navigation: any) => {
+  return (
+    <View style={styles.tabContent}>
+      <TouchableOpacity
+        style={styles.assignmentNavCard}
+        activeOpacity={0.7}
+        onPress={() =>
+          navigation.navigate('AssignmentList', {
+            classId: classData.id,
+            className: classData.name,
+          })
+        }>
+        <View style={styles.assignmentNavIcon}>
+          <Text style={styles.assignmentNavIconText}>📋</Text>
+        </View>
+        <View style={styles.assignmentNavContent}>
+          <Text style={styles.assignmentNavTitle}>Xem bài tập</Text>
+          <Text style={styles.assignmentNavSubtitle}>
+            Xem danh sách bài tập, nộp bài và xem kết quả chấm điểm
+          </Text>
+        </View>
+        <Text style={styles.assignmentNavArrow}>›</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -327,19 +365,19 @@ const renderStudentsTab = (classData: ClassInfo) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F0F4F8',
     padding: 40,
   },
   errorIcon: {
@@ -348,35 +386,34 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#64748B',
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0D47A1',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 6,
   },
   retryButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
-  // Header
   header: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#0D47A1',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: (StatusBar.currentHeight || 0) + 12,
     paddingBottom: 16,
     paddingHorizontal: 16,
   },
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -395,117 +432,112 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
-  // Tab Bar
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E2E8F0',
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
-    gap: 6,
+    gap: 4,
   },
   tabActive: {
-    borderBottomColor: '#2563EB',
+    borderBottomColor: '#0D47A1',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#94A3B8',
   },
   tabTextActive: {
-    color: '#2563EB',
+    color: '#0D47A1',
     fontWeight: '600',
   },
   tabBadge: {
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
   tabBadgeActive: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#E3F2FD',
   },
   tabBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#64748B',
   },
   tabBadgeTextActive: {
-    color: '#2563EB',
+    color: '#0D47A1',
   },
-  // Content
   content: {
     flex: 1,
   },
   tabContent: {
     padding: 16,
-    gap: 12,
+    gap: 10,
   },
   bottomSpace: {
     height: 24,
   },
-  // Section Card
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: '#0D47A1',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 14,
+    color: '#0F172A',
+    marginBottom: 12,
   },
-  // Teacher Card (in info tab)
   teacherCard: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   teacherAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#DBEAFE',
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   teacherAvatarText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#2563EB',
+    color: '#0D47A1',
   },
   teacherInfo: {
     flex: 1,
   },
   teacherNameText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 2,
   },
   teacherEmail: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 12,
+    color: '#64748B',
   },
-  // Info rows
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -513,116 +545,162 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#64748B',
   },
   infoValue: {
-    fontSize: 14,
-    color: '#1F2937',
+    fontSize: 13,
+    color: '#0F172A',
     fontWeight: '500',
   },
   infoValueCode: {
-    fontSize: 15,
-    color: '#2563EB',
+    fontSize: 14,
+    color: '#0D47A1',
     fontWeight: '700',
     fontFamily: 'monospace',
     letterSpacing: 2,
   },
   infoDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 8,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 6,
   },
   statusActiveBadge: {
-    backgroundColor: '#D1FAE5',
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 4,
+    paddingHorizontal: 8,
     paddingVertical: 3,
   },
   statusActiveText: {
     color: '#065F46',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   descriptionText: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 22,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20,
   },
-  // Lessons
   lessonCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#0D47A1',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1565C0',
   },
   lessonNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EEF2FF',
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   lessonNumberText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: '#0D47A1',
   },
   lessonContent: {
     flex: 1,
   },
   lessonTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 2,
   },
   lessonDescription: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
   },
   lessonArrow: {
-    fontSize: 22,
-    color: '#9CA3AF',
+    fontSize: 20,
+    color: '#94A3B8',
     fontWeight: '300',
     marginLeft: 8,
   },
-  // Members
-  memberCard: {
+  assignmentNavCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 8,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#0D47A1',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1565C0',
+  },
+  assignmentNavIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  assignmentNavIconText: {
+    fontSize: 22,
+  },
+  assignmentNavContent: {
+    flex: 1,
+  },
+  assignmentNavTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 3,
+  },
+  assignmentNavSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 17,
+  },
+  assignmentNavArrow: {
+    fontSize: 20,
+    color: '#94A3B8',
+    fontWeight: '300',
+    marginLeft: 8,
+  },
+  memberCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#0D47A1',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
   },
   memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#D1FAE5',
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#ECFDF5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   memberAvatarTeacher: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#E3F2FD',
   },
   memberAvatarText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#065F46',
   },
@@ -630,21 +708,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 1,
   },
   memberRole: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 12,
+    color: '#64748B',
   },
   memberIndex: {
-    fontSize: 13,
-    color: '#9CA3AF',
+    fontSize: 12,
+    color: '#94A3B8',
     fontWeight: '500',
   },
-  // Empty tab
   emptyTab: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -656,14 +733,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTabTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#0F172A',
     marginBottom: 6,
   },
   emptyTabSubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 20,
   },
