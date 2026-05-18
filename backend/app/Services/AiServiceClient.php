@@ -91,7 +91,7 @@ class AiServiceClient
   }
 
   /**
-   * Extract text from a file using the Python AI Service (PyMuPDF / python-docx).
+   * Extract text from a file using the Python AI Service (PyMuPDF / python-docx) fallback OCR GPT V4 vision.
    * Handles PDF, DOCX, and TXT correctly including UTF-8/Vietnamese content.
    */
   public function extractFileText(string $filePath, string $fileName): string
@@ -298,9 +298,6 @@ class AiServiceClient
   }
 
   /**
-   * Kiểm tra AI Service có hoạt động không
-   */
-  /**
    * Sinh báo cáo năng lực học sinh từ dữ liệu quiz và assignment qua Python AI Service.
    */
   public function generateCompetencyReport(array $payload): ?array
@@ -308,7 +305,9 @@ class AiServiceClient
     $response = $this->invokeAgent('competency_report', $payload);
     return $response['result'] ?? null;
   }
-
+   /**
+   * Kiểm tra AI Service có hoạt động không
+   */
   public function healthCheck(): bool
   {
     try {
