@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.agents import agent_registry, execute_agent
 from app.schemas.agent import AgentExecuteRequest, AgentExecuteResponse, AgentInfo
+from app.schemas.orchestrator import OrchestratorRequest, OrchestratorResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,3 +38,13 @@ async def execute_agent_endpoint(request: AgentExecuteRequest):
     except Exception as e:
         logger.error("Agent execution failed for %s: %s", request.agent, e)
         raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
+
+
+@router.post("/orchestrate", response_model=OrchestratorResponse)
+async def orchestrate_agents_endpoint(request: OrchestratorRequest):
+    try:
+        result = await execute_agent("orchestrator", request.model_dump())
+        return result
+    except Exception as e:
+        logger.error("Agent orchestration failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Agent orchestration failed: {str(e)}")
