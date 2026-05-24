@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\AiCompetencyReportService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AiCompetencyReportController extends Controller
 {
@@ -42,6 +44,24 @@ class AiCompetencyReportController extends Controller
     return response()->json($result['data'], $result['status']);
   }
 
+  public function generateClassReports(int $classId): JsonResponse
+  {
+    $result = $this->reportService->queueGenerateForClass($classId, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function generateBatchStatus(int $batchId): JsonResponse
+  {
+    $result = $this->reportService->getGenerateBatchStatus($batchId, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function riskAlerts(int $classId): JsonResponse
+  {
+    $result = $this->reportService->getClassRiskAlerts($classId, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
   public function update(Request $request, int $id): JsonResponse
   {
     $validated = $request->validate([
@@ -56,5 +76,28 @@ class AiCompetencyReportController extends Controller
 
     $result = $this->reportService->update($id, $validated, auth()->id());
     return response()->json($result['data'], $result['status']);
+  }
+
+  public function exportClassPdf(int $classId)
+  {
+    try {
+      $result = $this->reportService->getClassReportExportData($classId, auth()->id());
+
+      if ($result['status'] !== 200) {
+        return response()->json($result['data'], $result['status']);
+      }
+
+      $payload = $result['data']['data'];
+      $pdf = Pdf::loadView('pdf.competency-class-report', $payload)
+        ->setPaper('a4', 'portrait');
+
+      $className = Str::slug($payload['class']->name ?: 'class');
+      return $pdf->download("competency-report-{$className}.pdf");
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Lỗi khi xuất PDF báo cáo năng lực: ' . $e->getMessage(),
+      ], 500);
+    }
   }
 }

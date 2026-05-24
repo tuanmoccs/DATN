@@ -160,6 +160,10 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('teacher/competency-reports')->group(function () {
         Route::get('/', [AiCompetencyReportController::class, 'index']);
         Route::post('/generate', [AiCompetencyReportController::class, 'generate'])->middleware('throttle:ai');
+        Route::post('/class/{classId}/generate-all', [AiCompetencyReportController::class, 'generateClassReports'])->middleware('throttle:ai');
+        Route::get('/generate-batches/{batchId}', [AiCompetencyReportController::class, 'generateBatchStatus']);
+        Route::get('/class/{classId}/export-pdf', [AiCompetencyReportController::class, 'exportClassPdf']);
+        Route::get('/class/{classId}/risk-alerts', [AiCompetencyReportController::class, 'riskAlerts']);
         Route::get('/{id}', [AiCompetencyReportController::class, 'show']);
         Route::put('/{id}', [AiCompetencyReportController::class, 'update']);
     });
