@@ -81,7 +81,7 @@ class LessonController extends Controller
   {
     $slideCount = $request->input('slide_count', 10);
 
-    $result = $this->lessonService->regenerateSlides($id, auth()->id(), $slideCount);
+    $result = $this->lessonService->queueRegenerateSlides($id, auth()->id(), $slideCount);
     return response()->json($result['data'], $result['status']);
   }
 
@@ -118,7 +118,13 @@ class LessonController extends Controller
   {
     $questionCount = $request->input('question_count', 5);
 
-    $result = $this->lessonService->regenerateQuiz($id, auth()->id(), $questionCount);
+    $result = $this->lessonService->queueRegenerateQuiz($id, auth()->id(), $questionCount);
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function aiGenerationStatus(int $batchId): JsonResponse
+  {
+    $result = $this->lessonService->getAiGenerationBatchStatus($batchId, auth()->id());
     return response()->json($result['data'], $result['status']);
   }
 

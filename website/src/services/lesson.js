@@ -8,7 +8,7 @@ export default ($axios) => ({
   createLesson(formData) {
     return $axios.$post('/teacher/lessons', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 120000, // 2 min for AI generation
+      timeout: 60000,
     })
   },
 
@@ -34,7 +34,11 @@ export default ($axios) => ({
   regenerateSlides(id, slideCount = 10) {
     return $axios.$post(`/teacher/lessons/${id}/regenerate-slides`, {
       slide_count: slideCount,
-    }, { timeout: 120000 })
+    }, { timeout: 30000 })
+  },
+
+  getAiGenerationBatchStatus(batchId) {
+    return $axios.$get(`/teacher/lessons/ai-generation-batches/${batchId}`)
   },
 
   // Update slides manually
@@ -58,7 +62,7 @@ export default ($axios) => ({
   regenerateQuiz(id, questionCount = 5) {
     return $axios.$post(`/teacher/lessons/${id}/regenerate-quiz`, {
       question_count: questionCount,
-    }, { timeout: 120000 })
+    }, { timeout: 30000 })
   },
 
   // ========== Quiz APIs ==========

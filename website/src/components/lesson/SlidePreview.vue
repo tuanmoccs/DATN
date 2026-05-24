@@ -28,12 +28,16 @@
 
     <!-- Regenerating indicator -->
     <div v-if="regenerating" class="p-6 bg-purple-50 border border-purple-200 rounded-xl mb-6">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 mb-4">
         <i class="fas fa-robot text-purple-600 text-xl animate-bounce"></i>
-        <div>
-          <p class="text-sm font-medium text-purple-700">AI is generating slides...</p>
-          <p class="text-xs text-purple-500">This may take 30-60 seconds. Please wait.</p>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-purple-700">{{ generationMessage }}</p>
+          <p class="text-xs text-purple-500">You can keep editing other parts of the lesson while this runs.</p>
         </div>
+        <span class="text-sm font-semibold text-purple-700">{{ generationProgress }}%</span>
+      </div>
+      <div class="h-2 rounded-full bg-purple-100 overflow-hidden">
+        <div class="h-full bg-purple-600 transition-all duration-500" :style="{ width: `${generationProgress}%` }"></div>
       </div>
     </div>
 
@@ -285,6 +289,10 @@ const emit = defineEmits(['regenerate', 'updated', 'toast'])
 
 const api = useApi()
 const regenerating = ref(false)
+const generationProgress = ref(0)
+const generationMessage = ref('AI is preparing slide generation...')
+const pollTimer = ref(null)
+const generationStorageKey = computed(() => `lesson-ai-generation:${props.lessonId}:slides`)
 const saving = ref(false)
 const editing = ref(false)
 const editableSlides = ref([])
@@ -428,8 +436,14 @@ const onKeydown = (e) => {
   else if (e.key === 'ArrowRight') goTo(currentIndex.value + 1)
 }
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  resumePendingGeneration()
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  stopPolling()
+})
 
 watch(() => props.slides.length, () => {
   if (currentIndex.value >= props.slides.length) currentIndex.value = 0
@@ -438,16 +452,84 @@ watch(() => props.slides.length, () => {
 
 const handleRegenerate = async () => {
   regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Sending slide generation request...'
   try {
-    await api.lesson.regenerateSlides(props.lessonId)
+    const response = await api.lesson.regenerateSlides(props.lessonId)
+    const batchId = response.data?.id
+
+    if (batchId) {
+      localStorage.setItem(generationStorageKey.value, String(batchId))
+      generationMessage.value = response.data.message || 'Slide generation queued...'
+      startPolling(batchId)
+      return
+    }
+
+    generationProgress.value = 100
     emit('toast', 'Slides regenerated successfully!')
     emit('regenerate')
     currentIndex.value = 0
+    regenerating.value = false
   } catch (err) {
     emit('toast', err.response?.data?.message || 'Failed to regenerate slides', 'error')
-  } finally {
     regenerating.value = false
   }
+}
+
+const startPolling = (batchId) => {
+  stopPolling()
+  pollGenerationStatus(batchId, false)
+  pollTimer.value = setInterval(() => pollGenerationStatus(batchId), 2500)
+}
+
+const stopPolling = () => {
+  if (pollTimer.value) {
+    clearInterval(pollTimer.value)
+    pollTimer.value = null
+  }
+}
+
+const pollGenerationStatus = async (batchId, notifyErrors = true) => {
+  try {
+    const response = await api.lesson.getAiGenerationBatchStatus(batchId)
+    const batch = response.data
+    generationProgress.value = batch.progress || 0
+    generationMessage.value = batch.message || 'AI is generating slides...'
+
+    if (batch.status === 'completed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      generationProgress.value = 100
+      regenerating.value = false
+      emit('toast', 'Slides regenerated successfully!')
+      emit('regenerate')
+      currentIndex.value = 0
+    } else if (batch.status === 'failed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      regenerating.value = false
+      emit('toast', batch.error_message || 'Failed to regenerate slides', 'error')
+    } else {
+      regenerating.value = true
+    }
+  } catch (err) {
+    stopPolling()
+    localStorage.removeItem(generationStorageKey.value)
+    regenerating.value = false
+    if (notifyErrors) {
+      emit('toast', err.response?.data?.message || 'Failed to check generation status', 'error')
+    }
+  }
+}
+
+const resumePendingGeneration = () => {
+  const batchId = localStorage.getItem(generationStorageKey.value)
+  if (!batchId) return
+
+  regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Checking slide generation status...'
+  startPolling(batchId)
 }
 </script>
 

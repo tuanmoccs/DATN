@@ -26,6 +26,20 @@
         </span>
       </div>
 
+      <div v-if="aiGeneration.active" class="mb-6 p-5 bg-indigo-50 border border-indigo-200 rounded-xl">
+        <div class="flex items-center gap-3 mb-4">
+          <i class="fas fa-robot text-indigo-600 text-xl animate-bounce"></i>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-indigo-700">{{ aiGeneration.message }}</p>
+            <p class="text-xs text-indigo-500">Slides and quiz will appear automatically when generation finishes.</p>
+          </div>
+          <span class="text-sm font-semibold text-indigo-700">{{ aiGeneration.progress }}%</span>
+        </div>
+        <div class="h-2 rounded-full bg-indigo-100 overflow-hidden">
+          <div class="h-full bg-indigo-600 transition-all duration-500" :style="{ width: `${aiGeneration.progress}%` }"></div>
+        </div>
+      </div>
+
       <!-- Info Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -104,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useApi } from '@/plugins/api'
 import SlidePreview from '@/components/lesson/SlidePreview.vue'
@@ -118,6 +132,9 @@ const api = useApi()
 const lesson = ref(null)
 const loading = ref(true)
 const activeTab = ref('slides')
+const aiGeneration = ref({ active: false, progress: 0, message: 'AI generation queued...' })
+const aiPollTimer = ref(null)
+const aiGenerationStorageKey = computed(() => `lesson-ai-generation:${route.params.id}:all`)
 
 const tabs = [
   { key: 'slides', label: 'Slides', icon: 'fas fa-desktop' },
@@ -148,6 +165,61 @@ const handleRegenerateSlides = async () => {
   await fetchLesson()
 }
 
+const startAiGenerationPolling = (batchId) => {
+  stopAiGenerationPolling()
+  localStorage.setItem(aiGenerationStorageKey.value, String(batchId))
+  aiGeneration.value = { active: true, progress: 0, message: 'AI generation queued...' }
+  pollAiGenerationStatus(batchId, false)
+  aiPollTimer.value = setInterval(() => pollAiGenerationStatus(batchId), 2500)
+}
+
+const stopAiGenerationPolling = () => {
+  if (aiPollTimer.value) {
+    clearInterval(aiPollTimer.value)
+    aiPollTimer.value = null
+  }
+}
+
+const pollAiGenerationStatus = async (batchId, notifyErrors = true) => {
+  try {
+    const res = await api.lesson.getAiGenerationBatchStatus(batchId)
+    const batch = res.data
+    aiGeneration.value = {
+      active: !['completed', 'failed'].includes(batch.status),
+      progress: batch.progress || 0,
+      message: batch.message || 'AI generation is running...',
+    }
+
+    if (batch.status === 'completed') {
+      stopAiGenerationPolling()
+      localStorage.removeItem(aiGenerationStorageKey.value)
+      showToast('AI content generated successfully!')
+      await fetchLesson()
+    } else if (batch.status === 'failed') {
+      stopAiGenerationPolling()
+      localStorage.removeItem(aiGenerationStorageKey.value)
+      aiGeneration.value.active = false
+      showToast(batch.error_message || 'AI generation failed', 'error')
+    }
+  } catch (err) {
+    stopAiGenerationPolling()
+    localStorage.removeItem(aiGenerationStorageKey.value)
+    aiGeneration.value.active = false
+    if (notifyErrors) {
+      showToast('Failed to check AI generation status', 'error')
+    }
+  }
+}
+
+const resumePendingAiGeneration = () => {
+  const queryBatchId = route.query.ai_batch
+  const storedBatchId = localStorage.getItem(aiGenerationStorageKey.value)
+  const batchId = queryBatchId || storedBatchId
+  if (!batchId) return
+
+  startAiGenerationPolling(batchId)
+}
+
 const statusLabel = (status) => {
   const labels = { published: 'Published', draft: 'Draft' }
   return labels[status] || status
@@ -161,7 +233,12 @@ const statusClass = (status) => {
   return map[status] || 'bg-gray-100 text-gray-600'
 }
 
-onMounted(fetchLesson)
+onMounted(() => {
+  fetchLesson()
+  resumePendingAiGeneration()
+})
+
+onUnmounted(stopAiGenerationPolling)
 </script>
 
 <style scoped>

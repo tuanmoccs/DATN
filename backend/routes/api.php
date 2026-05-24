@@ -117,6 +117,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{id}/slides', [LessonController::class, 'updateSlides']);
         Route::delete('/{id}', [LessonController::class, 'destroy']);
         Route::get('/class/{classId}/search', [LessonController::class, 'search']);
+        Route::get('/ai-generation-batches/{batchId}', [LessonController::class, 'aiGenerationStatus']);
 
         // AI Generation (throttle riêng, cho phép request chạy lâu)
         Route::middleware('throttle:ai')->group(function () {

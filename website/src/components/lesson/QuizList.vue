@@ -12,12 +12,16 @@
 
     <!-- Regenerating -->
     <div v-if="regenerating" class="p-6 bg-green-50 border border-green-200 rounded-xl mb-6">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 mb-4">
         <i class="fas fa-robot text-green-600 text-xl animate-bounce"></i>
-        <div>
-          <p class="text-sm font-medium text-green-700">AI is generating quiz questions...</p>
-          <p class="text-xs text-green-500">This may take 20-40 seconds. Please wait.</p>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-green-700">{{ generationMessage }}</p>
+          <p class="text-xs text-green-500">You can continue working in other lesson tabs while this runs.</p>
         </div>
+        <span class="text-sm font-semibold text-green-700">{{ generationProgress }}%</span>
+      </div>
+      <div class="h-2 rounded-full bg-green-100 overflow-hidden">
+        <div class="h-full bg-green-600 transition-all duration-500" :style="{ width: `${generationProgress}%` }"></div>
       </div>
     </div>
 
@@ -288,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useApi } from '@/plugins/api'
 
 const props = defineProps({
@@ -300,6 +304,10 @@ const emit = defineEmits(['refresh', 'toast'])
 
 const api = useApi()
 const regenerating = ref(false)
+const generationProgress = ref(0)
+const generationMessage = ref('AI is preparing quiz generation...')
+const pollTimer = ref(null)
+const generationStorageKey = computed(() => `lesson-ai-generation:${props.lessonId}:quiz`)
 const exporting = ref(null)
 const selectedQuiz = ref(null)
 const editingQuestion = ref(null)
@@ -462,16 +470,86 @@ const publishQuiz = async (quiz) => {
 
 const handleRegenerateQuiz = async () => {
   regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Sending quiz generation request...'
   try {
-    await api.lesson.regenerateQuiz(props.lessonId)
+    const response = await api.lesson.regenerateQuiz(props.lessonId)
+    const batchId = response.data?.id
+
+    if (batchId) {
+      localStorage.setItem(generationStorageKey.value, String(batchId))
+      generationMessage.value = response.data.message || 'Quiz generation queued...'
+      startPolling(batchId)
+      return
+    }
+
+    generationProgress.value = 100
     emit('toast', 'Quiz generated successfully!')
     emit('refresh')
+    regenerating.value = false
   } catch (err) {
     emit('toast', err.response?.data?.message || 'Failed to generate quiz', 'error')
-  } finally {
     regenerating.value = false
   }
 }
+
+const startPolling = (batchId) => {
+  stopPolling()
+  pollGenerationStatus(batchId, false)
+  pollTimer.value = setInterval(() => pollGenerationStatus(batchId), 2500)
+}
+
+const stopPolling = () => {
+  if (pollTimer.value) {
+    clearInterval(pollTimer.value)
+    pollTimer.value = null
+  }
+}
+
+const pollGenerationStatus = async (batchId, notifyErrors = true) => {
+  try {
+    const response = await api.lesson.getAiGenerationBatchStatus(batchId)
+    const batch = response.data
+    generationProgress.value = batch.progress || 0
+    generationMessage.value = batch.message || 'AI is generating quiz questions...'
+
+    if (batch.status === 'completed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      generationProgress.value = 100
+      regenerating.value = false
+      emit('toast', 'Quiz generated successfully!')
+      emit('refresh')
+    } else if (batch.status === 'failed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      regenerating.value = false
+      emit('toast', batch.error_message || 'Failed to generate quiz', 'error')
+    } else {
+      regenerating.value = true
+    }
+  } catch (err) {
+    stopPolling()
+    localStorage.removeItem(generationStorageKey.value)
+    regenerating.value = false
+    if (notifyErrors) {
+      emit('toast', err.response?.data?.message || 'Failed to check generation status', 'error')
+    }
+  }
+}
+
+const resumePendingGeneration = () => {
+  const batchId = localStorage.getItem(generationStorageKey.value)
+  if (!batchId) return
+
+  regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Checking quiz generation status...'
+  startPolling(batchId)
+}
+
+onMounted(resumePendingGeneration)
+onUnmounted(stopPolling)
 
 const handleExportQuiz = async (quiz) => {
   exporting.value = quiz.id

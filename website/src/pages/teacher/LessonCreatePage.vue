@@ -164,7 +164,7 @@
         <button type="submit" :disabled="submitting"
           class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
           <i v-if="submitting" class="fas fa-spinner fa-spin"></i>
-          {{ submitting ? 'Creating & Generating AI Content...' : 'Create Lesson' }}
+          {{ submitting ? 'Creating lesson...' : 'Create Lesson' }}
         </button>
       </div>
 
@@ -173,8 +173,8 @@
         <div class="flex items-center gap-3">
           <i class="fas fa-robot text-blue-600 text-lg"></i>
           <div>
-            <p class="text-sm font-medium text-blue-700">AI is generating content...</p>
-            <p class="text-xs text-blue-500">This may take up to 30-60 seconds. Please don't close the page.</p>
+            <p class="text-sm font-medium text-blue-700">Creating lesson and queueing AI content...</p>
+            <p class="text-xs text-blue-500">You will be redirected to the lesson page while AI runs in the background.</p>
           </div>
         </div>
       </div>
@@ -303,9 +303,13 @@ const handleSubmit = async () => {
     const res = await api.lesson.createLesson(formData)
 
     if (res.success) {
-      showToast('Lesson created successfully!')
+      showToast(res.ai_generation?.id ? 'Lesson created. AI generation is running in background.' : 'Lesson created successfully!')
       setTimeout(() => {
-        router.push({ name: 'TeacherLessonDetail', params: { id: res.data.id } })
+        router.push({
+          name: 'TeacherLessonDetail',
+          params: { id: res.data.id },
+          query: res.ai_generation?.id ? { ai_batch: res.ai_generation.id } : {},
+        })
       }, 1000)
     }
   } catch (err) {
