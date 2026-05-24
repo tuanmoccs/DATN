@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     lesson_id: int
     student_id: int
     message: str
+    quiz_context: str = ""
     conversation_history: list[ChatMessage] = Field(default_factory=list)
 
 

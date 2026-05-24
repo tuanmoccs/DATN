@@ -308,6 +308,16 @@ class AiServiceClient
    /**
    * Kiểm tra AI Service có hoạt động không
    */
+  /**
+   * Student lesson-aware assistant. Payload quiz context must be sanitized and
+   * must not contain answer keys or quiz explanations.
+   */
+  public function chatWithLesson(array $payload): ?array
+  {
+    $response = $this->invokeAgent('chat', $payload);
+    return $response['result'] ?? null;
+  }
+
   public function healthCheck(): bool
   {
     try {

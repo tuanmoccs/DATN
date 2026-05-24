@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Log;
 
 class StudentLessonService
 {
+  public function __construct(
+    private readonly AiServiceClient $aiServiceClient
+  ) {}
+
   /**
    * Lấy chi tiết bài học cho học sinh: slides + quiz info + progress
    */
@@ -510,5 +514,114 @@ class StudentLessonService
         ],
       ];
     }
+  }
+
+  /**
+   * Chat assistant for students. Quiz context is sanitized so the AI never
+   * receives correct-option flags or teacher explanations.
+   */
+  public function askAssistant(int $lessonId, int $studentId, string $message, array $conversationHistory = []): array
+  {
+    try {
+      $lesson = Lesson::with([
+        'quizzes' => fn($q) => $q->where('status', 'published'),
+        'quizzes.questions.options',
+      ])->findOrFail($lessonId);
+
+      $isEnrolled = DB::table('enrollment')
+        ->where('class_id', $lesson->class_id)
+        ->where('user_id', $studentId)
+        ->where('status', 'active')
+        ->exists();
+
+      if (!$isEnrolled) {
+        return [
+          'status' => 403,
+          'data' => [
+            'success' => false,
+            'message' => 'Ban khong co quyen hoi ve bai hoc nay',
+          ],
+        ];
+      }
+
+      $payload = [
+        'lesson_id' => $lessonId,
+        'student_id' => $studentId,
+        'message' => $message,
+        'quiz_context' => $this->buildSanitizedQuizContext($lesson),
+        'conversation_history' => collect($conversationHistory)
+          ->take(-8)
+          ->map(fn($item) => [
+            'role' => ($item['role'] ?? '') === 'assistant' ? 'assistant' : 'user',
+            'content' => mb_substr((string) ($item['content'] ?? ''), 0, 1000),
+          ])
+          ->filter(fn($item) => trim($item['content']) !== '')
+          ->values()
+          ->all(),
+      ];
+
+      $result = $this->aiServiceClient->chatWithLesson($payload);
+
+      if (!$result || !($result['success'] ?? false)) {
+        return [
+          'status' => 502,
+          'data' => [
+            'success' => false,
+            'message' => $result['message'] ?? 'AI assistant hien chua san sang',
+          ],
+        ];
+      }
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'data' => [
+            'answer' => $result['answer'] ?? '',
+            'sources' => $result['sources'] ?? [],
+          ],
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Student lesson chat failed', [
+        'lesson_id' => $lessonId,
+        'student_id' => $studentId,
+        'error' => $e->getMessage(),
+      ]);
+
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Loi khi gui cau hoi: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
+  private function buildSanitizedQuizContext(Lesson $lesson): string
+  {
+    if ($lesson->quizzes->isEmpty()) {
+      return '';
+    }
+
+    $lines = [];
+
+    foreach ($lesson->quizzes as $quiz) {
+      $lines[] = "Quiz: {$quiz->title}";
+      if ($quiz->description) {
+        $lines[] = "Description: {$quiz->description}";
+      }
+
+      foreach ($quiz->questions as $question) {
+        $lines[] = "Question {$question->order}: {$question->content}";
+
+        foreach ($question->options as $option) {
+          $lines[] = "Option {$option->order}: {$option->option_text}";
+        }
+      }
+    }
+
+    return mb_substr(implode("\n", $lines), 0, 8000);
   }
 }

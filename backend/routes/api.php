@@ -97,6 +97,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('student/lessons')->group(function () {
         Route::get('/{lessonId}', [StudentLessonController::class, 'show']);
         Route::post('/{lessonId}/slide-progress', [StudentLessonController::class, 'updateSlideProgress']);
+        Route::post('/{lessonId}/chat', [StudentLessonController::class, 'chat'])->middleware('throttle:ai');
     });
     Route::prefix('student/quizzes')->group(function () {
         Route::post('/{quizId}/start', [StudentLessonController::class, 'startQuiz']);

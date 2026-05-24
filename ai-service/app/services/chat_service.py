@@ -18,7 +18,9 @@ async def chat_with_lesson(request: ChatRequest) -> ChatResponse:
         top_k=5,
     )
 
-    if not context:
+    quiz_context = request.quiz_context.strip()
+
+    if not context and not quiz_context:
         return ChatResponse(
             success=False,
             answer="",
@@ -43,7 +45,8 @@ async def chat_with_lesson(request: ChatRequest) -> ChatResponse:
     chain = prompt | llm
 
     response = await chain.ainvoke({
-        "context": context,
+        "context": context or "No retrieved lesson context.",
+        "quiz_context": quiz_context or "No quiz context provided.",
         "conversation_history": history_text or "No previous conversation.",
         "message": request.message,
     })
