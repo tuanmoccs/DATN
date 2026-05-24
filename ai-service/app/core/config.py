@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
-    openai_image_model: str = "dall-e-3"
+    openai_image_model: str = "gpt-image-2"
     openai_image_size: str = "1024x1024"
-    openai_image_quality: str = "standard"
+    openai_image_quality: str = "auto"
 
     # Server
     host: str = "0.0.0.0"

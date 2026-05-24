@@ -24,25 +24,9 @@
               placeholder="Nhập email của bạn" @keyup.enter="sendOtp" />
           </div>
 
-          <!-- Role Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">
-              <i class="fas fa-user-tie text-blue-500 mr-2"></i>Vai Trò
-            </label>
-            <div class="grid grid-cols-2 gap-3">
-              <button v-for="r in ['teacher', 'student']" :key="r" @click="role = r" :class="[
-                'py-3 px-4 rounded-lg border-2 font-medium transition-all',
-                role === r
-                  ? 'border-blue-500 bg-blue-50 text-blue-600'
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-              ]">
-                {{ r === 'teacher' ? '👨‍🏫 Giáo Viên' : '👨‍🎓 Học Sinh' }}
-              </button>
-            </div>
-          </div>
 
           <!-- Send OTP Button -->
-          <button @click="sendOtp" :disabled="!email || !role || otpLoading"
+          <button @click="sendOtp" :disabled="!email || otpLoading"
             class="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2">
             <i v-if="!otpLoading" class="fas fa-paper-plane"></i>
             <i v-else class="fas fa-spinner fa-spin"></i>
@@ -307,7 +291,7 @@ const startOtpTimer = () => {
 }
 
 const sendOtp = async () => {
-  if (!email.value || !role.value) return
+  if (!email.value) return
 
   try {
     otpLoading.value = true

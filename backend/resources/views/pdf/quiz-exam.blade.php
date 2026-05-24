@@ -20,7 +20,7 @@
 
         /* ── PAGE ── */
         .page {
-            width: 100%;
+            width: 80%;
             padding: 16mm 18mm 18mm 18mm;
         }
 
