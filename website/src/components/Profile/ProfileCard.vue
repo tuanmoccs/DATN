@@ -133,7 +133,7 @@
                 <div class="relative">
                   <input v-model="passwordForm.currentPassword" :type="showPasswords.current ? 'text' : 'password'"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Nhập mật khẩu hiện tại" />
+                    placeholder="Current Password" />
                   <button type="button" @click="togglePasswordVisibility('current')"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                     <i :class="[showPasswords.current ? 'fas fa-eye-slash' : 'fas fa-eye']"></i>
@@ -148,7 +148,7 @@
                 <div class="relative">
                   <input v-model="passwordForm.newPassword" :type="showPasswords.new ? 'text' : 'password'"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Nhập mật khẩu mới" />
+                    placeholder="New Password" />
                   <button type="button" @click="togglePasswordVisibility('new')"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                     <i :class="[showPasswords.new ? 'fas fa-eye-slash' : 'fas fa-eye']"></i>
@@ -171,7 +171,7 @@
                 <div class="relative">
                   <input v-model="passwordForm.confirmPassword" :type="showPasswords.confirm ? 'text' : 'password'"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Xác nhận mật khẩu mới" />
+                    placeholder="Confirm New Password" />
                   <button type="button" @click="togglePasswordVisibility('confirm')"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                     <i :class="[showPasswords.confirm ? 'fas fa-eye-slash' : 'fas fa-eye']"></i>

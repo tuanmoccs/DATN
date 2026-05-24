@@ -74,7 +74,7 @@ const menuItems = [
   { icon: 'fas fa-tasks', label: 'Assignments', path: '/teacher/assignments' },
   { icon: 'fas fa-user-graduate', label: 'Students', path: '/teacher/students' },
   { icon: 'fas fa-chart-bar', label: 'Reports', path: '/teacher/reports' },
-  { icon: 'fas fa-cog', label: 'Settings', path: '/teacher/settings' },
+  { icon: 'fas fa-cog', label: 'Settings', path: '/teacher/profile' },
 ]
 
 const isActive = (path) => {

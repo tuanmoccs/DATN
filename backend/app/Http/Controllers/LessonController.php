@@ -85,6 +85,32 @@ class LessonController extends Controller
     return response()->json($result['data'], $result['status']);
   }
 
+  public function updateSlides(Request $request, int $id): JsonResponse
+  {
+    $data = $request->validate([
+      'slides' => ['required', 'array', 'min:1', 'max:60'],
+      'slides.*.id' => ['nullable', 'integer'],
+      'slides.*.title' => ['nullable', 'string', 'max:255'],
+      'slides.*.content' => ['required', 'string'],
+      'slides.*.notes' => ['nullable', 'string'],
+      'slides.*.layout' => ['required', 'in:title,content,two_column,image,bullet_points'],
+      'slides.*.image_url' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $result = $this->lessonService->updateSlides($id, $data['slides'], auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
+  public function uploadSlideImage(Request $request, int $id): JsonResponse
+  {
+    $request->validate([
+      'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'],
+    ]);
+
+    $result = $this->lessonService->uploadSlideImage($id, auth()->id(), $request->file('image'));
+    return response()->json($result['data'], $result['status']);
+  }
+
   /**
    * Sinh lại quiz bằng AI
    */

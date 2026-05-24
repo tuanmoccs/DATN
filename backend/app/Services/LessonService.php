@@ -254,6 +254,7 @@ class LessonService
       // Kiểm tra quyền
       if ($lesson->created_by !== $teacherId) {
         if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
           return [
             'status' => 403,
             'data' => [
@@ -348,6 +349,7 @@ class LessonService
 
       if ($lesson->created_by !== $teacherId) {
         if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
           return [
             'status' => 403,
             'data' => [
@@ -492,8 +494,149 @@ class LessonService
     }
   }
 
+  public function updateSlides(int $lessonId, array $slides, int $teacherId): array
+  {
+    DB::beginTransaction();
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['presentation.slides', 'class']);
+
+      if ($lesson->created_by !== $teacherId) {
+        if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
+          return [
+            'status' => 403,
+            'data' => [
+              'success' => false,
+              'message' => 'You do not have permission to edit slides for this lesson',
+            ],
+          ];
+        }
+      }
+
+      $presentation = $lesson->presentation;
+      if (!$presentation) {
+        $presentation = $this->presentationRepository->create([
+          'lesson_id' => $lesson->id,
+          'current_version' => 1,
+          'status' => 'draft',
+          'generated_by' => 'teacher',
+          'ai_prompt' => null,
+        ]);
+      }
+
+      $existingSlideIds = $presentation->slides()->pluck('id')->all();
+      $payloadIds = collect($slides)
+        ->pluck('id')
+        ->filter()
+        ->map(fn($id) => (int) $id)
+        ->all();
+
+      $invalidIds = array_diff($payloadIds, $existingSlideIds);
+      if (!empty($invalidIds)) {
+        DB::rollBack();
+        return [
+          'status' => 422,
+          'data' => [
+            'success' => false,
+            'message' => 'One or more slides do not belong to this lesson',
+          ],
+        ];
+      }
+
+      $presentation->slides()
+        ->whereNotIn('id', $payloadIds)
+        ->delete();
+
+      foreach (array_values($slides) as $index => $slideData) {
+        $data = [
+          'presentation_id' => $presentation->id,
+          'order' => $index + 1,
+          'title' => $this->cleanText($slideData['title'] ?? null),
+          'content' => $this->cleanText($slideData['content'] ?? ''),
+          'notes' => $this->cleanText($slideData['notes'] ?? null),
+          'layout' => $slideData['layout'] ?? 'content',
+          'image_url' => $this->cleanText($slideData['image_url'] ?? null, 500),
+        ];
+
+        if (!empty($slideData['id'])) {
+          PresentationSlide::where('presentation_id', $presentation->id)
+            ->where('id', $slideData['id'])
+            ->update($data);
+        } else {
+          PresentationSlide::create($data);
+        }
+      }
+
+      DB::commit();
+
+      $presentation->load('slides');
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'message' => 'Slides updated successfully',
+          'data' => $presentation,
+        ],
+      ];
+    } catch (\Exception $e) {
+      DB::rollBack();
+      Log::error('Update slides failed', ['lesson_id' => $lessonId, 'error' => $e->getMessage()]);
+
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Failed to update slides: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
+  public function uploadSlideImage(int $lessonId, int $teacherId, $imageFile): array
+  {
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['class']);
+
+      if ($lesson->created_by !== $teacherId) {
+        if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          return [
+            'status' => 403,
+            'data' => [
+              'success' => false,
+              'message' => 'You do not have permission to upload images for this lesson',
+            ],
+          ];
+        }
+      }
+
+      $path = $imageFile->store('slides', 'public');
+
+      return [
+        'status' => 201,
+        'data' => [
+          'success' => true,
+          'message' => 'Slide image uploaded successfully',
+          'path' => $path,
+          'image_url' => '/storage/' . $path,
+          'url' => asset('storage/' . $path),
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Upload slide image failed', ['lesson_id' => $lessonId, 'error' => $e->getMessage()]);
+
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Failed to upload slide image: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
   /**
-   * Gọi AI sinh lại quiz cho bài học
+   * Regenerate quiz questions for the lesson.
    */
   public function regenerateQuiz(int $lessonId, int $teacherId, int $questionCount = 5): array
   {

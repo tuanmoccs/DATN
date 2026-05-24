@@ -113,6 +113,8 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [LessonController::class, 'store']);
         Route::get('/{id}', [LessonController::class, 'show']);
         Route::post('/{id}', [LessonController::class, 'update']); // POST thay PUT vì có file upload
+        Route::post('/{id}/slides/image', [LessonController::class, 'uploadSlideImage']);
+        Route::put('/{id}/slides', [LessonController::class, 'updateSlides']);
         Route::delete('/{id}', [LessonController::class, 'destroy']);
         Route::get('/class/{classId}/search', [LessonController::class, 'search']);
 

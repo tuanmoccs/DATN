@@ -3,11 +3,20 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-800">Presentation Slides</h3>
-      <button @click="handleRegenerate" :disabled="regenerating"
-        class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50">
-        <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
-        {{ regenerating ? 'Generating...' : 'Regenerate with AI' }}
-      </button>
+      <div class="flex items-center gap-2">
+        <button v-if="slides.length > 0" @click="toggleEditing" :disabled="regenerating || saving || !!uploadingSlideKey" :class="[
+          'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium disabled:opacity-50',
+          editing ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700'
+        ]">
+          <i :class="editing ? 'fas fa-times' : 'fas fa-pen'"></i>
+          {{ editing ? 'Cancel' : 'Edit slides' }}
+        </button>
+        <button @click="handleRegenerate" :disabled="regenerating || saving || !!uploadingSlideKey"
+          class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50">
+          <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
+          {{ regenerating ? 'Generating...' : 'Regenerate with AI' }}
+        </button>
+      </div>
     </div>
 
     <!-- Empty -->
@@ -29,6 +38,93 @@
     </div>
 
     <!-- Slide Carousel -->
+    <div v-if="editing" class="mb-6 border border-gray-200 rounded-xl bg-white overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-sm font-semibold text-gray-700">Slide editor</p>
+        <div class="flex items-center gap-2">
+          <button @click="addSlide"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100">
+            <i class="fas fa-plus"></i>Add slide
+          </button>
+          <button @click="saveSlides" :disabled="saving || !!uploadingSlideKey || editableSlides.length === 0"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50">
+            <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+            {{ saving ? 'Saving...' : 'Save changes' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="divide-y divide-gray-100">
+        <div v-for="(slide, idx) in editableSlides" :key="slide.localKey" class="p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-gray-400">Slide {{ idx + 1 }}</span>
+              <select v-model="slide.layout"
+                class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option v-for="layout in layoutOptions" :key="layout" :value="layout">{{ layout }}</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1">
+              <button @click="moveSlide(idx, -1)" :disabled="idx === 0"
+                class="w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30">
+                <i class="fas fa-arrow-up"></i>
+              </button>
+              <button @click="moveSlide(idx, 1)" :disabled="idx === editableSlides.length - 1"
+                class="w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+              <button @click="removeSlide(idx)" class="w-8 h-8 rounded-lg text-red-500 hover:bg-red-50">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-xs font-medium text-gray-500">Title</span>
+              <input v-model="slide.title" type="text"
+                class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </label>
+            <div>
+              <span class="text-xs font-medium text-gray-500">Image</span>
+              <div class="mt-1 flex items-center gap-3">
+                <div class="w-24 h-14 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+                  <img v-if="getSlideImageUrl(slide)" :src="getSlideImageUrl(slide)" :alt="slide.title"
+                    class="w-full h-full object-cover" />
+                  <i v-else class="fas fa-image text-gray-300"></i>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <label
+                    class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer">
+                    <i :class="uploadingSlideKey === slide.localKey ? 'fas fa-spinner fa-spin' : 'fas fa-upload'"></i>
+                    {{ uploadingSlideKey === slide.localKey ? 'Uploading...' : 'Upload image' }}
+                    <input type="file" accept="image/*" class="hidden" :disabled="uploadingSlideKey === slide.localKey"
+                      @change="handleSlideImageChange($event, slide)" />
+                  </label>
+                  <button v-if="slide.image_url" @click="slide.image_url = ''"
+                    class="px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100">
+                    <i class="fas fa-times mr-1"></i>Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <label class="block mt-3">
+            <span class="text-xs font-medium text-gray-500">Content</span>
+            <textarea v-model="slide.content" rows="5"
+              class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </label>
+
+          <label class="block mt-3">
+            <span class="text-xs font-medium text-gray-500">Speaker notes</span>
+            <textarea v-model="slide.notes" rows="3"
+              class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div v-if="slides.length > 0" class="space-y-4">
       <!-- Main Slide Display -->
       <div class="relative group">
@@ -39,8 +135,8 @@
         </button>
 
         <!-- Slide Card -->
-        <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white cursor-pointer"
-          @click="openFullscreen">
+        <div class="overflow-hidden rounded-2xl border border-gray-200 shadow-sm bg-white"
+          :class="editing ? 'cursor-default' : 'cursor-pointer'" @click="!editing && openFullscreen()">
           <!-- Slide Content Area -->
           <div
             class="aspect-video bg-gradient-to-br from-blue-600 to-blue-800 p-8 md:p-12 flex flex-col justify-center relative">
@@ -185,16 +281,110 @@ const props = defineProps({
   lessonId: { type: Number, required: true },
 })
 
-const emit = defineEmits(['regenerate', 'toast'])
+const emit = defineEmits(['regenerate', 'updated', 'toast'])
 
 const api = useApi()
 const regenerating = ref(false)
+const saving = ref(false)
+const editing = ref(false)
+const editableSlides = ref([])
+const uploadingSlideKey = ref(null)
 const currentIndex = ref(0)
 const fullscreen = ref(false)
 const thumbStrip = ref(null)
 const storageBaseUrl = (import.meta.env.VITE_STORAGE_ENDPOINT || 'http://localhost:8000/storage').replace(/\/$/, '')
+const layoutOptions = ['title', 'content', 'two_column', 'image', 'bullet_points']
 
 const currentSlide = computed(() => props.slides[currentIndex.value] || {})
+
+const cloneSlidesForEdit = () => props.slides.map((slide, index) => ({
+  id: slide.id || null,
+  localKey: slide.id ? `slide-${slide.id}` : `new-${Date.now()}-${index}`,
+  title: slide.title || '',
+  content: slide.content || '',
+  notes: slide.notes || '',
+  layout: layoutOptions.includes(slide.layout) ? slide.layout : 'content',
+  image_url: slide.image_url || '',
+}))
+
+const toggleEditing = () => {
+  editing.value = !editing.value
+  editableSlides.value = editing.value ? cloneSlidesForEdit() : []
+}
+
+const addSlide = () => {
+  editableSlides.value.push({
+    id: null,
+    localKey: `new-${Date.now()}-${editableSlides.value.length}`,
+    title: 'New slide',
+    content: '',
+    notes: '',
+    layout: 'content',
+    image_url: '',
+  })
+}
+
+const removeSlide = (idx) => {
+  editableSlides.value.splice(idx, 1)
+  if (currentIndex.value >= editableSlides.value.length) {
+    currentIndex.value = Math.max(editableSlides.value.length - 1, 0)
+  }
+}
+
+const moveSlide = (idx, direction) => {
+  const nextIdx = idx + direction
+  if (nextIdx < 0 || nextIdx >= editableSlides.value.length) return
+
+  const nextSlides = [...editableSlides.value]
+  const [slide] = nextSlides.splice(idx, 1)
+  nextSlides.splice(nextIdx, 0, slide)
+  editableSlides.value = nextSlides
+}
+
+const saveSlides = async () => {
+  const invalidSlide = editableSlides.value.find(slide => !slide.content.trim())
+  if (invalidSlide) {
+    emit('toast', 'Slide content is required', 'error')
+    return
+  }
+
+  saving.value = true
+  try {
+    const payload = editableSlides.value.map((slide) => ({
+      id: slide.id,
+      title: slide.title,
+      content: slide.content,
+      notes: slide.notes || null,
+      layout: slide.layout,
+      image_url: slide.image_url || null,
+    }))
+    await api.lesson.updateSlides(props.lessonId, payload)
+    emit('toast', 'Slides saved successfully!')
+    emit('updated')
+    editing.value = false
+  } catch (err) {
+    emit('toast', err.response?.data?.message || 'Failed to save slides', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleSlideImageChange = async (event, slide) => {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+
+  uploadingSlideKey.value = slide.localKey
+  try {
+    const response = await api.lesson.uploadSlideImage(props.lessonId, file)
+    slide.image_url = response.image_url || response.url || response.path || ''
+    emit('toast', 'Slide image uploaded successfully!')
+  } catch (err) {
+    emit('toast', err.response?.data?.message || 'Failed to upload slide image', 'error')
+  } finally {
+    uploadingSlideKey.value = null
+  }
+}
 
 const getSlideImageUrl = (slide) => {
   const imageUrl = slide?.image_url
@@ -202,6 +392,7 @@ const getSlideImageUrl = (slide) => {
   if (/^(https?:)?\/\//.test(imageUrl) || imageUrl.startsWith('data:image')) return imageUrl
   if (imageUrl.startsWith('/storage/')) return `${storageBaseUrl}${imageUrl.replace('/storage', '')}`
   if (imageUrl.startsWith('storage/')) return `${storageBaseUrl}/${imageUrl.replace(/^storage\//, '')}`
+  if (imageUrl.startsWith('slides/')) return `${storageBaseUrl}/${imageUrl}`
   return imageUrl
 }
 
@@ -242,6 +433,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 watch(() => props.slides.length, () => {
   if (currentIndex.value >= props.slides.length) currentIndex.value = 0
+  if (editing.value) editableSlides.value = cloneSlidesForEdit()
 })
 
 const handleRegenerate = async () => {

@@ -37,6 +37,23 @@ export default ($axios) => ({
     }, { timeout: 120000 })
   },
 
+  // Update slides manually
+  updateSlides(id, slides) {
+    return $axios.$put(`/teacher/lessons/${id}/slides`, { slides }, {
+      timeout: 60000,
+    })
+  },
+
+  // Upload slide image to storage
+  uploadSlideImage(id, file) {
+    const formData = new FormData()
+    formData.append('image', file)
+    return $axios.$post(`/teacher/lessons/${id}/slides/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
+  },
+
   // Regenerate quiz with AI
   regenerateQuiz(id, questionCount = 5) {
     return $axios.$post(`/teacher/lessons/${id}/regenerate-quiz`, {

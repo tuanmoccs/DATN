@@ -64,7 +64,7 @@
       <!-- Tab: Slides -->
       <div v-if="activeTab === 'slides'">
         <SlidePreview :slides="lesson.presentation?.slides || []" :lesson-id="lesson.id"
-          @regenerate="handleRegenerateSlides" @toast="showToast" />
+          @regenerate="handleRegenerateSlides" @updated="fetchLesson" @toast="showToast" />
       </div>
 
       <!-- Tab: Quizzes -->
