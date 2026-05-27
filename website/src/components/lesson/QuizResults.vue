@@ -231,8 +231,13 @@ const fetchAttempts = async () => {
   error.value = null
   try {
     const res = await api.lesson.getQuizAttempts(props.quiz.id)
-    attempts.value = res.data?.data || []
-    totalPoints.value = res.data?.total_points || 10
+    const payload = res?.data && !Array.isArray(res.data) && Object.prototype.hasOwnProperty.call(res.data, 'data')
+      ? res.data
+      : res
+    const attemptList = Array.isArray(payload?.data) ? payload.data : []
+
+    attempts.value = attemptList.filter(attempt => ['submitted', 'graded'].includes(String(attempt.status).toLowerCase()))
+    totalPoints.value = payload?.total_points || props.quiz.total_points || 10
   } catch (err) {
     error.value = err.response?.data?.message || 'Failed to load quiz student results.'
   } finally {
