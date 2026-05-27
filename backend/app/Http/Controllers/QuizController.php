@@ -122,4 +122,13 @@ class QuizController extends Controller
       ], 500);
     }
   }
+
+  /**
+   * Lấy danh sách học sinh làm bài và điểm số của quiz
+   */
+  public function getAttempts(int $id): JsonResponse
+  {
+    $result = $this->quizService->getQuizAttempts($id, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
 }

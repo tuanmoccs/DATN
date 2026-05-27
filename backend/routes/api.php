@@ -133,6 +133,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('teacher/quizzes')->group(function () {
         Route::get('/lesson/{lessonId}', [QuizController::class, 'index']);
         Route::get('/{id}', [QuizController::class, 'show']);
+        Route::get('/{id}/attempts', [QuizController::class, 'getAttempts']);
         Route::get('/{id}/export-pdf', [QuizController::class, 'exportPDF']);
         Route::put('/{id}', [QuizController::class, 'update']);
         Route::delete('/{id}', [QuizController::class, 'destroy']);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\QuizQuestion;
 use App\Models\QuizOption;
+use App\Models\QuizAttempt;
 use App\Repositories\Contracts\QuizRepositoryInterface;
 use App\Repositories\Contracts\LessonRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -446,6 +447,55 @@ class QuizService
         'data' => [
           'success' => false,
           'message' => 'Lỗi khi publish quiz: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
+  /**
+   * Lấy danh sách học sinh đã làm quiz và điểm số
+   */
+  public function getQuizAttempts(int $quizId, int $teacherId): array
+  {
+    try {
+      $quiz = $this->quizRepository->findOrFail($quizId);
+
+      // Kiểm tra quyền
+      if ($quiz->created_by !== $teacherId) {
+        $lesson = $quiz->lesson;
+        if ($lesson && $lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          return [
+            'status' => 403,
+            'data' => [
+              'success' => false,
+              'message' => 'Bạn không có quyền xem điểm số của quiz này',
+            ],
+          ];
+        }
+      }
+
+      $attempts = QuizAttempt::with('student:id,name,email')
+        ->where('quiz_id', $quizId)
+        ->orderByDesc('submitted_at')
+        ->get();
+
+      $totalPoints = $quiz->getTotalPoints();
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'total_points' => $totalPoints,
+          'data' => $attempts,
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Get quiz attempts failed', ['error' => $e->getMessage()]);
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Lỗi khi lấy danh sách điểm số: ' . $e->getMessage(),
         ],
       ];
     }

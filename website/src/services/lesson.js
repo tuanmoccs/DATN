@@ -77,6 +77,11 @@ export default ($axios) => ({
     return $axios.$get(`/teacher/quizzes/${quizId}`)
   },
 
+  // Get quiz attempts
+  getQuizAttempts(quizId) {
+    return $axios.$get(`/teacher/quizzes/${quizId}/attempts`)
+  },
+
   // Update quiz info
   updateQuiz(quizId, data) {
     return $axios.$put(`/teacher/quizzes/${quizId}`, data)

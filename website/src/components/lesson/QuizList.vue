@@ -74,6 +74,10 @@
             <i :class="exporting === quiz.id ? 'fas fa-spinner fa-spin' : 'fas fa-download'" class="mr-1"></i>
             {{ exporting === quiz.id ? 'Exporting...' : 'Export PDF' }}
           </button>
+          <button @click="viewResults(quiz)"
+            class="px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium">
+            <i class="fas fa-poll mr-1"></i> Results
+          </button>
           <button v-if="quiz.status === 'draft'" @click="publishQuiz(quiz)"
             class="px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium">
             <i class="fas fa-check-circle mr-1"></i> Publish
@@ -288,12 +292,18 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Quiz Results Modal -->
+    <Teleport to="body">
+      <QuizResults v-if="selectedQuizForResults" :quiz="selectedQuizForResults" @close="selectedQuizForResults = null" />
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useApi } from '@/plugins/api'
+import QuizResults from './QuizResults.vue'
 
 const props = defineProps({
   quizzes: { type: Array, default: () => [] },
@@ -310,6 +320,7 @@ const pollTimer = ref(null)
 const generationStorageKey = computed(() => `lesson-ai-generation:${props.lessonId}:quiz`)
 const exporting = ref(null)
 const selectedQuiz = ref(null)
+const selectedQuizForResults = ref(null)
 const editingQuestion = ref(null)
 const saving = ref(false)
 const deleteTarget = ref(null)
@@ -335,6 +346,10 @@ const newQuestion = reactive({
     { option_text: '', is_correct: false, order: 4 },
   ],
 })
+
+const viewResults = (quiz) => {
+  selectedQuizForResults.value = quiz
+}
 
 const viewQuiz = async (quiz) => {
   try {
