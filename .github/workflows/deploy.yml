@@ -25,8 +25,9 @@ jobs:
             cd ~/DATN
             
             # 1. Pull latest changes from Git
-            git checkout fix/implement-some-feat
-            git pull origin fix/implement-some-feat
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
             
             # 2. Deploy and rebuild changed containers dynamically
             docker compose up -d --build
