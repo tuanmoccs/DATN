@@ -736,7 +736,7 @@ const formatDate = (date) => {
 
 const getFileUrl = (path) => {
   if (!path) return ''
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://doantnta.site'
   return `${baseUrl}/storage/${path}`
 }
 
