@@ -29,6 +29,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         exif \
         pcntl
 
+# Configure PHP upload limits for large lesson files
+RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Install Composer from official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
