@@ -354,9 +354,9 @@ class AssignmentService
 
       DB::commit();
 
-      // Tự động gọi AI chấm điểm bằng background job
+      // Tự động gọi AI chấm điểm bằng background job sau khi gửi response
       try {
-        \App\Jobs\GradeSubmissionJob::dispatch($submission->id);
+        \App\Jobs\GradeSubmissionJob::dispatch($submission->id)->afterResponse();
       } catch (\Exception $e) {
         Log::warning('AI auto-grading job dispatch failed', ['submission_id' => $submission->id, 'error' => $e->getMessage()]);
       }

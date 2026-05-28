@@ -3,7 +3,7 @@ import json
 import logging
 
 from fastapi import UploadFile
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.dependencies import get_llm
@@ -59,7 +59,7 @@ Return only a valid JSON object with this exact structure:
 """
 
 
-async def grade_assignment(request: AssignmentGradeRequest) -> AssignmentGradeResponse:
+async def grade_assignment(request: AssignmentGradeRequest, student_images: list[str] = None) -> AssignmentGradeResponse:
     if not request.student_answer.strip():
         return AssignmentGradeResponse(
             success=False,
@@ -72,13 +72,45 @@ async def grade_assignment(request: AssignmentGradeRequest) -> AssignmentGradeRe
         )
 
     llm = get_llm()
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", ASSIGNMENT_GRADING_SYSTEM_PROMPT),
-        ("user", ASSIGNMENT_GRADING_USER_PROMPT),
-    ])
+    
+    # Format the prompt text
+    formatted_user_prompt = ASSIGNMENT_GRADING_USER_PROMPT.format(
+        assignment_title=request.assignment_title,
+        assignment_description=request.assignment_description,
+        assignment_instructions=request.assignment_instructions,
+        max_score=request.max_score,
+        assignment_reference_text=request.assignment_reference_text,
+        student_answer=request.student_answer,
+    )
+    
+    # Add a notice about the images if present
+    if student_images:
+        formatted_user_prompt += (
+            "\nNote: The actual images of the student's submission are also attached below. "
+            "Inspect the images carefully to grade the student's handwriting, formulas, steps, layout, and drawings."
+        )
 
-    chain = prompt | llm
-    response = await chain.ainvoke(request.model_dump())
+    # Construct messages for LangChain
+    user_content = [
+        {
+            "type": "text",
+            "text": formatted_user_prompt
+        }
+    ]
+    
+    if student_images:
+        for img_url in student_images:
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": img_url}
+            })
+
+    messages = [
+        SystemMessage(content=ASSIGNMENT_GRADING_SYSTEM_PROMPT),
+        HumanMessage(content=user_content)
+    ]
+
+    response = await llm.ainvoke(messages)
     parsed = _parse_json(response.content)
 
     suggested_score = _clamp_score(parsed.get("suggested_score", 0), request.max_score)
@@ -100,8 +132,34 @@ async def grade_assignment(request: AssignmentGradeRequest) -> AssignmentGradeRe
     )
 
 
-async def extract_submission_text(files: list[UploadFile]) -> str:
-    return await extract_files_text(files, default_filename="submission")
+async def extract_submission_data(files: list[UploadFile]) -> tuple[str, list[str]]:
+    content_parts: list[str] = []
+    images: list[str] = []
+
+    for file in files:
+        filename = file.filename or "submission"
+        file_bytes = await file.read()
+
+        try:
+            content_type = _detect_content_type(filename, file.content_type or "")
+
+            if content_type == "image":
+                mime_type = file.content_type or "image/png"
+                text = await _extract_text_from_image(file_bytes, mime_type)
+
+                # Base64 encode for vision input
+                image_data = base64.b64encode(file_bytes).decode("utf-8")
+                data_url = f"data:{mime_type};base64,{image_data}"
+                images.append(data_url)
+            else:
+                text = await extract_text_from_bytes_with_fallback(file_bytes, content_type)
+
+            if text.strip():
+                content_parts.append(f"File: {filename}\n{text.strip()}")
+        except Exception as exc:
+            logger.warning("Failed to extract assignment file %s: %s", filename, exc)
+
+    return "\n\n".join(content_parts), images
 
 
 async def extract_reference_text(files: list[UploadFile]) -> str:
