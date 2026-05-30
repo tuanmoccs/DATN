@@ -203,6 +203,68 @@ class AiServiceClient
     return $response->json();
   }
 
+  public function processRagSandboxFile($file, array $settings): array
+  {
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+      ->post("{$this->baseUrl}/api/rag-sandbox/process", [
+        'chunk_size' => (string) ($settings['chunk_size'] ?? 1000),
+        'chunk_overlap' => (string) ($settings['chunk_overlap'] ?? 200),
+        'top_k' => (string) ($settings['top_k'] ?? 5),
+        'score_threshold' => (string) ($settings['score_threshold'] ?? 0.45),
+        'max_context_chars' => (string) ($settings['max_context_chars'] ?? 12000),
+        'low_confidence_fallback' => ($settings['low_confidence_fallback'] ?? true) ? 'true' : 'false',
+      ]);
+
+    if (!$response->successful()) {
+      throw new \RuntimeException('AI Service sandbox processing failed: ' . $response->body());
+    }
+
+    return $response->json();
+  }
+
+  public function retrieveRagSandbox(string $sandboxId, string $query, array $settings): array
+  {
+    return $this->postRagSandbox("/api/rag-sandbox/retrieve", [
+      'sandbox_id' => $sandboxId,
+      'query' => $query,
+      'settings' => $settings,
+    ]);
+  }
+
+  public function generateRagSandboxSlides(string $sandboxId, string $query, array $settings, int $count, string $language): array
+  {
+    return $this->postRagSandbox("/api/rag-sandbox/slides", [
+      'sandbox_id' => $sandboxId,
+      'query' => $query,
+      'settings' => $settings,
+      'count' => $count,
+      'language' => $language,
+    ]);
+  }
+
+  public function generateRagSandboxQuiz(string $sandboxId, string $query, array $settings, int $count, string $language, string $difficulty): array
+  {
+    return $this->postRagSandbox("/api/rag-sandbox/quiz", [
+      'sandbox_id' => $sandboxId,
+      'query' => $query,
+      'settings' => $settings,
+      'count' => $count,
+      'language' => $language,
+      'difficulty' => $difficulty,
+    ]);
+  }
+
+  public function deleteRagSandbox(string $sandboxId): array
+  {
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->delete("{$this->baseUrl}/api/rag-sandbox/{$sandboxId}");
+
+    return $response->successful() ? $response->json() : ['success' => false];
+  }
+
   /**
    * Sinh slides qua RAG pipeline
    */
@@ -361,6 +423,19 @@ class AiServiceClient
       'Accept' => 'application/json',
       'X-API-Secret' => $this->secret,
     ];
+  }
+
+  private function postRagSandbox(string $path, array $payload): array
+  {
+    $response = Http::timeout($this->timeout)
+      ->withHeaders($this->headers())
+      ->post("{$this->baseUrl}{$path}", $payload);
+
+    if (!$response->successful()) {
+      throw new \RuntimeException('AI Service sandbox request failed: ' . $response->body());
+    }
+
+    return $response->json();
   }
 
   private function resolveStoredFilePath(string $filePath): string

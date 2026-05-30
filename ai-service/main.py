@@ -15,6 +15,7 @@ from app.api.autocomplete import router as autocomplete_router
 from app.api.agents import router as agents_router
 from app.api.assignments import router as assignments_router
 from app.api.health import router as health_router
+from app.api.rag_sandbox import router as rag_sandbox_router
 
 
 @asynccontextmanager
@@ -87,6 +88,12 @@ app.include_router(
     assignments_router,
     prefix="/api/assignments",
     tags=["Assignments"],
+    dependencies=[Depends(verify_api_secret)],
+)
+app.include_router(
+    rag_sandbox_router,
+    prefix="/api/rag-sandbox",
+    tags=["RAG Sandbox"],
     dependencies=[Depends(verify_api_secret)],
 )
 

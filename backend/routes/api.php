@@ -10,6 +10,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AiCompetencyReportController;
 use App\Http\Controllers\LessonPlanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RagSandboxController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -186,5 +187,13 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/{id}/upload-reference', [LessonPlanController::class, 'uploadReference']);
         Route::post('/{id}/upload-reference-text', [LessonPlanController::class, 'uploadReferenceText']);
         Route::post('/{id}/ai-suggest', [LessonPlanController::class, 'aiSuggest']);
+    });
+
+    Route::prefix('teacher/rag-sandbox')->group(function () {
+        Route::post('/process', [RagSandboxController::class, 'process'])->middleware('throttle:ai');
+        Route::post('/retrieve', [RagSandboxController::class, 'retrieve'])->middleware('throttle:ai');
+        Route::post('/slides', [RagSandboxController::class, 'slides'])->middleware('throttle:ai');
+        Route::post('/quiz', [RagSandboxController::class, 'quiz'])->middleware('throttle:ai');
+        Route::delete('/{sandboxId}', [RagSandboxController::class, 'destroy']);
     });
 });

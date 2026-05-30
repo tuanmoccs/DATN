@@ -91,6 +91,11 @@ const router = createRouter({
           component: () => import('@/pages/teacher/ReportsPage.vue'),
         },
         {
+          path: 'rag-sandbox',
+          name: 'TeacherRagSandbox',
+          component: () => import('@/pages/teacher/RagSandboxPage.vue'),
+        },
+        {
           path: 'profile',
           name: 'TeacherProfile',
           component: () => import('@/pages/teacher/ProfilePage.vue'),

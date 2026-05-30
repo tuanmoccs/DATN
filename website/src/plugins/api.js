@@ -6,6 +6,7 @@ import assignmentService from '../services/assignment'
 import dashboardService from '../services/dashboard'
 import lessonPlanService from '../services/lessonPlan'
 import competencyReportService from '../services/competencyReport'
+import ragSandboxService from '../services/ragSandbox'
 
 
 export const API_KEY = Symbol('api')
@@ -19,6 +20,7 @@ export const createApi = ($axios) => {
     dashboard: dashboardService($axios),
     lessonPlan: lessonPlanService($axios),
     competencyReport: competencyReportService($axios),
+    ragSandbox: ragSandboxService($axios),
   }
 }
 
