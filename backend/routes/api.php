@@ -132,6 +132,7 @@ Route::middleware('auth:api')->group(function () {
     // ==========================================
     Route::prefix('teacher/quizzes')->group(function () {
         Route::get('/lesson/{lessonId}', [QuizController::class, 'index']);
+        Route::post('/lesson/{lessonId}', [QuizController::class, 'store']);
         Route::get('/{id}', [QuizController::class, 'show']);
         Route::get('/{id}/attempts', [QuizController::class, 'getAttempts']);
         Route::get('/{id}/export-pdf', [QuizController::class, 'exportPDF']);
@@ -141,6 +142,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Quản lý câu hỏi
         Route::post('/{quizId}/questions', [QuizController::class, 'addQuestion']);
+        Route::post('/{quizId}/questions/import-excel', [QuizController::class, 'importQuestions']);
         Route::put('/{quizId}/questions/{questionId}', [QuizController::class, 'updateQuestion']);
         Route::delete('/{quizId}/questions/{questionId}', [QuizController::class, 'deleteQuestion']);
     });

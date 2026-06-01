@@ -94,6 +94,8 @@ services:
     build:
       context: ./website
       dockerfile: Dockerfile
+      args:
+        - VITE_API_ENDPOINT=https://doantnta.site/api
     container_name: datn-frontend
     restart: always
     networks:

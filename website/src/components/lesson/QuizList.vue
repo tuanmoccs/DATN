@@ -3,11 +3,18 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-800">Quizzes</h3>
-      <button @click="handleRegenerateQuiz" :disabled="regenerating"
-        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
-        <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
-        {{ regenerating ? 'Generating...' : 'Generate New Quiz with AI' }}
-      </button>
+      <div class="flex items-center gap-2">
+        <button @click="showCreateQuiz = true"
+          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <i class="fas fa-plus"></i>
+          Create Quiz
+        </button>
+        <button @click="handleRegenerateQuiz" :disabled="regenerating"
+          class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
+          <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
+          {{ regenerating ? 'Generating...' : 'Generate New Quiz with AI' }}
+        </button>
+      </div>
     </div>
 
     <!-- Regenerating -->
@@ -29,7 +36,19 @@
     <div v-if="quizzes.length === 0 && !regenerating" class="text-center py-12 bg-gray-50 rounded-xl">
       <i class="fas fa-question-circle text-4xl text-gray-300 mb-3"></i>
       <h4 class="text-base font-semibold text-gray-600 mb-1">No quizzes yet</h4>
-      <p class="text-sm text-gray-400">Click "Generate New Quiz with AI" to create quiz questions</p>
+      <p class="text-sm text-gray-400">Create a quiz manually or generate one with AI to start adding questions</p>
+      <div class="mt-5 flex items-center justify-center gap-3">
+        <button @click="showCreateQuiz = true"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <i class="fas fa-plus"></i>
+          Create Quiz
+        </button>
+        <button @click="handleRegenerateQuiz" :disabled="regenerating"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
+          <i class="fas fa-magic"></i>
+          Generate with AI
+        </button>
+      </div>
     </div>
 
     <!-- Quiz Cards -->
@@ -90,6 +109,59 @@
       </div>
     </div>
 
+    <!-- Create Quiz Modal -->
+    <Teleport to="body">
+      <div v-if="showCreateQuiz" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="showCreateQuiz = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div class="flex items-center justify-between p-5 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800">Create Quiz</h3>
+            <button @click="showCreateQuiz = false" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-lg"></i>
+            </button>
+          </div>
+
+          <form @submit.prevent="handleCreateQuiz" class="p-5 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span
+                  class="text-red-500">*</span></label>
+              <input v-model="newQuiz.title" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <textarea v-model="newQuiz.description" rows="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Time limit</label>
+                <input v-model.number="newQuiz.time_limit" type="number" min="1" max="180" placeholder="Minutes"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Max attempts</label>
+                <input v-model.number="newQuiz.max_attempts" type="number" min="1" max="10"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <button type="button" @click="showCreateQuiz = false"
+                class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm">
+                Cancel
+              </button>
+              <button type="submit" :disabled="creatingQuiz"
+                class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50">
+                <i v-if="creatingQuiz" class="fas fa-spinner fa-spin mr-1"></i>
+                {{ creatingQuiz ? 'Creating...' : 'Create Quiz' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Quiz Detail Modal -->
     <Teleport to="body">
       <div v-if="selectedQuiz" class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -106,6 +178,13 @@
                 class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 <i class="fas fa-plus mr-1"></i> Add Question
               </button>
+              <label
+                class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors cursor-pointer"
+                :class="{ 'opacity-50 pointer-events-none': importingQuestions }">
+                <i :class="importingQuestions ? 'fas fa-spinner fa-spin' : 'fas fa-file-excel'" class="mr-1"></i>
+                {{ importingQuestions ? 'Importing...' : 'Import Excel' }}
+                <input type="file" class="hidden" accept=".xlsx,.xls,.csv,.txt" @change="handleImportQuestions" />
+              </label>
               <button @click="selectedQuiz = null" class="text-gray-400 hover:text-gray-600 p-2">
                 <i class="fas fa-times text-lg"></i>
               </button>
@@ -114,6 +193,14 @@
 
           <!-- Questions -->
           <div class="p-5 space-y-6">
+            <div
+              class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-start gap-3">
+              <i class="fas fa-info-circle mt-0.5"></i>
+              <p>
+                Excel columns: question, option_a, option_b, option_c, option_d, correct_answer, explanation, points.
+                correct_answer can be A/B/C/D or 1/2/3/4.
+              </p>
+            </div>
             <div v-for="(question, qIdx) in selectedQuiz.questions" :key="question.id"
               class="bg-gray-50 rounded-xl p-5 border border-gray-200">
 
@@ -325,8 +412,11 @@ const editingQuestion = ref(null)
 const saving = ref(false)
 const deleteTarget = ref(null)
 const deleting = ref(false)
+const showCreateQuiz = ref(false)
+const creatingQuiz = ref(false)
 const showAddQuestion = ref(false)
 const addingQuestion = ref(false)
+const importingQuestions = ref(false)
 
 const editForm = reactive({
   content: '',
@@ -345,6 +435,13 @@ const newQuestion = reactive({
     { option_text: '', is_correct: false, order: 3 },
     { option_text: '', is_correct: false, order: 4 },
   ],
+})
+
+const newQuiz = reactive({
+  title: '',
+  description: '',
+  time_limit: null,
+  max_attempts: 1,
 })
 
 const viewResults = (quiz) => {
@@ -399,6 +496,7 @@ const saveEdit = async (question) => {
     selectedQuiz.value = res.data
     editingQuestion.value = null
     emit('toast', 'Question updated successfully!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to update question', 'error')
   } finally {
@@ -413,6 +511,7 @@ const handleDeleteQuestion = async (question) => {
     const res = await api.lesson.getQuizDetail(selectedQuiz.value.id)
     selectedQuiz.value = res.data
     emit('toast', 'Question deleted!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to delete question', 'error')
   }
@@ -432,10 +531,64 @@ const handleAddQuestion = async () => {
     showAddQuestion.value = false
     resetNewQuestion()
     emit('toast', 'Question added successfully!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to add question', 'error')
   } finally {
     addingQuestion.value = false
+  }
+}
+
+const handleCreateQuiz = async () => {
+  creatingQuiz.value = true
+  try {
+    const payload = {
+      title: newQuiz.title,
+      description: newQuiz.description || null,
+      time_limit: newQuiz.time_limit || null,
+      max_attempts: newQuiz.max_attempts || 1,
+    }
+
+    const res = await api.lesson.createQuiz(props.lessonId, payload)
+    showCreateQuiz.value = false
+    resetNewQuiz()
+    emit('toast', 'Quiz created successfully!')
+    emit('refresh')
+
+    if (res.data?.id) {
+      await viewQuiz(res.data)
+    }
+  } catch (err) {
+    emit('toast', err.response?.data?.message || 'Failed to create quiz', 'error')
+  } finally {
+    creatingQuiz.value = false
+  }
+}
+
+const resetNewQuiz = () => {
+  newQuiz.title = ''
+  newQuiz.description = ''
+  newQuiz.time_limit = null
+  newQuiz.max_attempts = 1
+}
+
+const handleImportQuestions = async (event) => {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file || !selectedQuiz.value) return
+
+  importingQuestions.value = true
+  try {
+    const res = await api.lesson.importQuizQuestions(selectedQuiz.value.id, file)
+    selectedQuiz.value = res.data
+    emit('toast', res.message || 'Questions imported successfully!')
+    emit('refresh')
+  } catch (err) {
+    const errors = err.response?.data?.errors
+    const firstError = Array.isArray(errors) ? errors[0] : null
+    emit('toast', firstError || err.response?.data?.message || 'Failed to import questions', 'error')
+  } finally {
+    importingQuestions.value = false
   }
 }
 

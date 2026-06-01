@@ -72,6 +72,11 @@ export default ($axios) => ({
     return $axios.$get(`/teacher/quizzes/lesson/${lessonId}`)
   },
 
+  // Create quiz manually for lesson
+  createQuiz(lessonId, data) {
+    return $axios.$post(`/teacher/quizzes/lesson/${lessonId}`, data)
+  },
+
   // Get quiz detail
   getQuizDetail(quizId) {
     return $axios.$get(`/teacher/quizzes/${quizId}`)
@@ -100,6 +105,16 @@ export default ($axios) => ({
   // Add question to quiz
   addQuestion(quizId, data) {
     return $axios.$post(`/teacher/quizzes/${quizId}/questions`, data)
+  },
+
+  // Import questions from Excel/CSV
+  importQuizQuestions(quizId, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return $axios.$post(`/teacher/quizzes/${quizId}/questions/import-excel`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
   },
 
   // Update question

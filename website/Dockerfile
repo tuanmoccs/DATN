@@ -1,6 +1,8 @@
 # Build stage
 FROM node:20-alpine AS build-stage
 WORKDIR /app
+ARG VITE_API_ENDPOINT
+ENV VITE_API_ENDPOINT=$VITE_API_ENDPOINT
 COPY package*.json ./
 RUN npm install
 COPY . .
