@@ -3,9 +3,19 @@ import axios from "axios"
 import router from "../router"
 import errorMessages from "../constants/error"
 
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1' && !host.startsWith('192.168.')) {
+      return `${window.location.protocol}//${host}/api`;
+    }
+  }
+  return import.meta.env.VITE_API_ENDPOINT || "http://localhost:8000/api";
+};
+
 // Tạo axios instance
 const $axios = axios.create({
-  baseURL: import.meta.env.VITE_API_ENDPOINT || "http://localhost:8000/api",
+  baseURL: getBaseURL(),
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
