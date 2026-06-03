@@ -4,7 +4,6 @@ node_modules
 .gitignore
 .env
 .env.backup
-composer.lock
 tests
 storage/framework/cache/data/*
 storage/framework/sessions/*
