@@ -380,43 +380,7 @@ const AssignmentDetailScreen: React.FC = () => {
             )}
 
             {/* AI Grading Results */}
-            {grading.ai_status === 'completed' &&
-              grading.ai_suggested_score !== null && (
-                <View style={styles.aiSection}>
-                  <View style={styles.aiHeader}>
-                    <Text style={styles.aiHeaderIcon}>🤖</Text>
-                    <Text style={styles.aiHeaderTitle}>
-                      Gợi ý từ AI
-                    </Text>
-                  </View>
-
-                  <View style={styles.aiScoreRow}>
-                    <Text style={styles.aiScoreLabel}>Điểm gợi ý:</Text>
-                    <Text style={styles.aiScoreValue}>
-                      {grading.ai_suggested_score}/{grading.max_score}
-                    </Text>
-                  </View>
-
-                  {grading.ai_feedback && (
-                    <View style={styles.aiFeedbackBox}>
-                      <Text style={styles.aiFeedbackText}>
-                        {typeof grading.ai_feedback === 'string'
-                          ? grading.ai_feedback
-                          : JSON.stringify(grading.ai_feedback, null, 2)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-            {grading.ai_status === 'processing' && (
-              <View style={styles.aiProcessing}>
-                <ActivityIndicator size="small" color="#8B5CF6" />
-                <Text style={styles.aiProcessingText}>
-                  AI đang chấm điểm...
-                </Text>
-              </View>
-            )}
+            
           </View>
         )}
 

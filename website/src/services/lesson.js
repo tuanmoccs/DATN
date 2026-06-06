@@ -8,7 +8,7 @@ export default ($axios) => ({
   createLesson(formData) {
     return $axios.$post('/teacher/lessons', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 120000, // 2 min for AI generation
+      timeout: 60000,
     })
   },
 
@@ -34,14 +34,35 @@ export default ($axios) => ({
   regenerateSlides(id, slideCount = 10) {
     return $axios.$post(`/teacher/lessons/${id}/regenerate-slides`, {
       slide_count: slideCount,
-    }, { timeout: 120000 })
+    }, { timeout: 30000 })
+  },
+
+  getAiGenerationBatchStatus(batchId) {
+    return $axios.$get(`/teacher/lessons/ai-generation-batches/${batchId}`)
+  },
+
+  // Update slides manually
+  updateSlides(id, slides) {
+    return $axios.$put(`/teacher/lessons/${id}/slides`, { slides }, {
+      timeout: 60000,
+    })
+  },
+
+  // Upload slide image to storage
+  uploadSlideImage(id, file) {
+    const formData = new FormData()
+    formData.append('image', file)
+    return $axios.$post(`/teacher/lessons/${id}/slides/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
   },
 
   // Regenerate quiz with AI
   regenerateQuiz(id, questionCount = 5) {
     return $axios.$post(`/teacher/lessons/${id}/regenerate-quiz`, {
       question_count: questionCount,
-    }, { timeout: 120000 })
+    }, { timeout: 30000 })
   },
 
   // ========== Quiz APIs ==========
@@ -51,9 +72,19 @@ export default ($axios) => ({
     return $axios.$get(`/teacher/quizzes/lesson/${lessonId}`)
   },
 
+  // Create quiz manually for lesson
+  createQuiz(lessonId, data) {
+    return $axios.$post(`/teacher/quizzes/lesson/${lessonId}`, data)
+  },
+
   // Get quiz detail
   getQuizDetail(quizId) {
     return $axios.$get(`/teacher/quizzes/${quizId}`)
+  },
+
+  // Get quiz attempts
+  getQuizAttempts(quizId) {
+    return $axios.$get(`/teacher/quizzes/${quizId}/attempts`)
   },
 
   // Update quiz info
@@ -74,6 +105,16 @@ export default ($axios) => ({
   // Add question to quiz
   addQuestion(quizId, data) {
     return $axios.$post(`/teacher/quizzes/${quizId}/questions`, data)
+  },
+
+  // Import questions from Excel/CSV
+  importQuizQuestions(quizId, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return $axios.$post(`/teacher/quizzes/${quizId}/questions/import-excel`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
   },
 
   // Update question

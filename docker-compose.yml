@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # 1. Database (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: datn-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-DATNAITECH}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-ServBay.dev}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ServBay.dev}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - datn-network
+
+  # 2. Laravel Backend (PHP-FPM)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datn-backend
+    restart: always
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-DATNAITECH}
+      - DB_USERNAME=root
+      - DB_PASSWORD=${DB_PASSWORD:-ServBay.dev}
+      - QUEUE_CONNECTION=database
+      - AI_SERVICE_URL=http://ai-service:8001
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+    depends_on:
+      - db
+    networks:
+      - datn-network
+
+  # 3. Laravel Queue Worker
+  # Reuses the backend image to run php artisan queue:work continuously
+  queue-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datn-queue-worker
+    restart: always
+    command: php artisan queue:work --verbose --tries=3 --timeout=120
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-DATNAITECH}
+      - DB_USERNAME=root
+      - DB_PASSWORD=${DB_PASSWORD:-ServBay.dev}
+      - QUEUE_CONNECTION=database
+      - AI_SERVICE_URL=http://ai-service:8001
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+    depends_on:
+      - db
+      - backend
+    networks:
+      - datn-network
+
+  # 4. Python AI Service (FastAPI + ChromaDB RAG)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: datn-ai-service
+    restart: always
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - DEBUG=false
+    volumes:
+      - ./ai-service:/app
+      - chroma_data:/app/chroma_data
+    ports:
+      - "8001:8001" # Expose for testing if needed, can be removed for pure secure internal communication
+    networks:
+      - datn-network
+
+  # 5. Teacher Website (Vue Frontend)
+  frontend:
+    build:
+      context: ./website
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_ENDPOINT=https://doantnta.site/api
+    container_name: datn-frontend
+    restart: always
+    networks:
+      - datn-network
+
+  # 6. Main Nginx Gateway Proxy
+  nginx:
+    image: nginx:stable-alpine
+    container_name: datn-nginx-gateway
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - datn-network
+
+networks:
+  datn-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  chroma_data:
+    driver: local

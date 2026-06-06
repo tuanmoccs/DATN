@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
-    openai_image_model: str = "gpt-image-1"
-    openai_image_size: str = "1536x1024"
-    openai_image_quality: str = "medium"
+    openai_image_model: str = "gpt-image-2"
+    openai_image_size: str = "1024x1024"
+    openai_image_quality: str = "auto"
 
     # Server
     host: str = "0.0.0.0"
@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     # Chunking
     chunk_size: int = 1000
     chunk_overlap: int = 200
+
+    # RAG retrieval
+    rag_score_threshold: float = 0.45
+    rag_candidate_multiplier: int = 4
+    rag_max_context_chars: int = 12000
+    rag_low_confidence_fallback: bool = True
 
     class Config:
         env_file = ".env"

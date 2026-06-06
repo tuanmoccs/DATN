@@ -181,7 +181,7 @@
                 <button @click="requestAIGrade(selectedSubmission.id)" :disabled="aiGrading"
                   class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:bg-gray-400 font-medium">
                   <i :class="aiGrading ? 'fas fa-spinner fa-spin' : 'fas fa-magic'" class="mr-1"></i>
-                  {{ aiGrading ? 'Đang xử lý...' : 'Yêu cầu AI chấm' }}
+                  {{ aiGrading ? 'Processing...' : 'Require AI grading' }}
                 </button>
               </div>
 
@@ -736,7 +736,7 @@ const formatDate = (date) => {
 
 const getFileUrl = (path) => {
   if (!path) return ''
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://doantnta.site'
   return `${baseUrl}/storage/${path}`
 }
 

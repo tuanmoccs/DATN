@@ -1,0 +1,11 @@
+venv
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.env
+chroma_data/*
+!chroma_data/.gitkeep

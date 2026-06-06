@@ -9,11 +9,20 @@ import {
   StatusBar,
   RefreshControl,
   Image,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import lessonService, {LessonDetail, QuizOverview} from '../../services/lessonService';
+import lessonService, {
+  LessonChatMessage,
+  LessonDetail,
+  QuizOverview,
+} from '../../services/lessonService';
 import {MainStackParamList} from '../../navigation/MainNavigator';
+import {getImageUrl} from '../../config/api';
 
 type LessonDetailRouteProp = RouteProp<MainStackParamList, 'LessonDetail'>;
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -26,6 +35,16 @@ const LessonDetailScreen: React.FC = () => {
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const [chatMessages, setChatMessages] = useState<LessonChatMessage[]>([
+    {
+      role: 'assistant',
+      content:
+        'Bạn có thể hỏi về nội dung bài học hoặc cách suy luận khi làm quiz. Mình sẽ gợi ý và giải thích, nhưng không đưa đáp án đúng.',
+    },
+  ]);
 
   const fetchLesson = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -72,6 +91,46 @@ const LessonDetailScreen: React.FC = () => {
     });
   };
 
+  const handleSendChat = async () => {
+    const text = chatInput.trim();
+    if (!lesson || !text || chatSending) return;
+
+    const history = chatMessages;
+    const nextMessages: LessonChatMessage[] = [
+      ...chatMessages,
+      {role: 'user', content: text},
+    ];
+
+    setChatMessages(nextMessages);
+    setChatInput('');
+    setChatSending(true);
+
+    try {
+      const response = await lessonService.askAssistant(lesson.id, text, history);
+      setChatMessages(current => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            response.data.answer ||
+            'Mình chưa tìm thấy đủ thông tin trong bài học để trả lời câu này.',
+        },
+      ]);
+    } catch (error: any) {
+      setChatMessages(current => [
+        ...current,
+        {
+          role: 'assistant',
+          content:
+            error?.response?.data?.message ||
+            'Hiện chưa thể gửi câu hỏi. Bạn thử lại sau nhé.',
+        },
+      ]);
+    } finally {
+      setChatSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -95,7 +154,7 @@ const LessonDetailScreen: React.FC = () => {
   const progressPercent = lesson.progress.total_slides > 0
     ? Math.round((lesson.progress.slides_viewed / lesson.progress.total_slides) * 100)
     : 0;
-  const previewSlideImageUrl = lesson.slides.find(slide => slide.image_url)?.image_url;
+  const previewSlideImageUrl = getImageUrl(lesson.slides.find(slide => slide.image_url)?.image_url);
 
   return (
     <View style={styles.container}>
@@ -209,7 +268,17 @@ const LessonDetailScreen: React.FC = () => {
 
         {/* Quiz Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📝 Câu hỏi kiểm tra</Text>
+          <View style={styles.quizSectionHeader}>
+            <Text style={styles.cardTitle}>📝 Câu hỏi kiểm tra</Text>
+            <TouchableOpacity
+              style={styles.assistantBtn}
+              onPress={() => setChatVisible(true)}>
+              <Text style={styles.assistantBtnText}>AI hỏi đáp</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.assistantHint}>
+            Hỏi gợi ý về bài học và quiz, AI sẽ không đưa đáp án đúng.
+          </Text>
           {!lesson.progress.slides_completed && lesson.quizzes.length > 0 && (
             <View style={styles.lockBanner}>
               <Text style={styles.lockIcon}>🔒</Text>
@@ -276,6 +345,76 @@ const LessonDetailScreen: React.FC = () => {
 
         <View style={{height: 32}} />
       </ScrollView>
+
+      <Modal
+        visible={chatVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setChatVisible(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.chatOverlay}>
+          <View style={styles.chatPanel}>
+            <View style={styles.chatHeader}>
+              <View>
+                <Text style={styles.chatTitle}>AI hỏi đáp</Text>
+                <Text style={styles.chatSubtitle}>Gợi ý học tập, không lộ đáp án quiz</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.chatCloseBtn}
+                onPress={() => setChatVisible(false)}>
+                <Text style={styles.chatCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.chatMessages} showsVerticalScrollIndicator={false}>
+              {chatMessages.map((message, index) => (
+                <View
+                  key={`${message.role}-${index}`}
+                  style={[
+                    styles.chatBubble,
+                    message.role === 'user'
+                      ? styles.chatBubbleUser
+                      : styles.chatBubbleAssistant,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.chatBubbleText,
+                      message.role === 'user' && styles.chatBubbleTextUser,
+                    ]}>
+                    {message.content}
+                  </Text>
+                </View>
+              ))}
+              {chatSending && (
+                <View style={[styles.chatBubble, styles.chatBubbleAssistant]}>
+                  <ActivityIndicator size="small" color="#0D47A1" />
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.chatInputRow}>
+              <TextInput
+                style={styles.chatInput}
+                value={chatInput}
+                onChangeText={setChatInput}
+                placeholder="Nhập câu hỏi về bài học hoặc quiz..."
+                placeholderTextColor="#94A3B8"
+                multiline
+              />
+              <TouchableOpacity
+                style={[
+                  styles.chatSendBtn,
+                  (!chatInput.trim() || chatSending) && styles.chatSendBtnDisabled,
+                ]}
+                disabled={!chatInput.trim() || chatSending}
+                onPress={handleSendChat}>
+                <Text style={styles.chatSendText}>Gửi</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -352,6 +491,16 @@ const styles = StyleSheet.create({
   lockIcon: {fontSize: 16},
   lockText: {fontSize: 12, color: '#92400E', fontWeight: '500'},
 
+  quizSectionHeader: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10},
+  assistantBtn: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  assistantBtnText: {fontSize: 12, color: '#0D47A1', fontWeight: '700'},
+  assistantHint: {fontSize: 12, color: '#64748B', lineHeight: 17, marginTop: -4, marginBottom: 12},
+
   quizCard: {
     backgroundColor: '#F8FAFC', borderRadius: 6, padding: 14, marginBottom: 10,
     borderWidth: 1, borderColor: '#E2E8F0',
@@ -371,6 +520,82 @@ const styles = StyleSheet.create({
   quizBtnDisabled: {backgroundColor: '#CBD5E1'},
   quizBtnText: {color: '#FFF', fontSize: 13, fontWeight: '600'},
   quizBtnTextDisabled: {color: '#94A3B8'},
+  chatOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15,23,42,0.35)',
+  },
+  chatPanel: {
+    height: '78%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  chatTitle: {fontSize: 16, fontWeight: '700', color: '#0F172A'},
+  chatSubtitle: {fontSize: 11, color: '#64748B', marginTop: 2},
+  chatCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatCloseText: {fontSize: 24, color: '#475569', lineHeight: 26},
+  chatMessages: {flex: 1, paddingVertical: 12},
+  chatBubble: {
+    maxWidth: '86%',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  chatBubbleAssistant: {alignSelf: 'flex-start', backgroundColor: '#F1F5F9'},
+  chatBubbleUser: {alignSelf: 'flex-end', backgroundColor: '#0D47A1'},
+  chatBubbleText: {fontSize: 13, color: '#0F172A', lineHeight: 19},
+  chatBubbleTextUser: {color: '#FFFFFF'},
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 10,
+  },
+  chatInput: {
+    flex: 1,
+    minHeight: 42,
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontSize: 13,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+  },
+  chatSendBtn: {
+    height: 42,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#0D47A1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatSendBtnDisabled: {backgroundColor: '#CBD5E1'},
+  chatSendText: {fontSize: 13, color: '#FFFFFF', fontWeight: '700'},
 });
 
 export default LessonDetailScreen;

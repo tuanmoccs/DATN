@@ -354,11 +354,11 @@ class AssignmentService
 
       DB::commit();
 
-      // Tự động gọi AI chấm điểm (async-like)
+      // Tự động gọi AI chấm điểm bằng background job sau khi gửi response
       try {
-        $this->triggerAIGrading($submission->id);
+        \App\Jobs\GradeSubmissionJob::dispatch($submission->id)->afterResponse();
       } catch (\Exception $e) {
-        Log::warning('AI auto-grading trigger failed', ['submission_id' => $submission->id, 'error' => $e->getMessage()]);
+        Log::warning('AI auto-grading job dispatch failed', ['submission_id' => $submission->id, 'error' => $e->getMessage()]);
       }
 
       $submission->load(['attachments', 'grading']);
@@ -621,6 +621,26 @@ class AssignmentService
       $this->performAIGrading($submission);
     } catch (\Exception $e) {
       Log::error('Trigger AI grading failed', ['submission_id' => $submissionId, 'error' => $e->getMessage()]);
+    }
+  }
+
+  /**
+   * Thực hiện AI chấm điểm theo submissionId (dùng cho Background Job)
+   */
+  public function performAIGradingById(int $submissionId): void
+  {
+    try {
+      $submission = $this->submissionRepository->getSubmissionWithRelations($submissionId, [
+        'assignment',
+        'attachments',
+        'grading',
+      ]);
+
+      if ($submission) {
+        $this->performAIGrading($submission);
+      }
+    } catch (\Exception $e) {
+      Log::error('performAIGradingById failed', ['submission_id' => $submissionId, 'error' => $e->getMessage()]);
     }
   }
 

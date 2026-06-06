@@ -118,6 +118,16 @@ export interface QuizResultData {
   show_answers: boolean;
 }
 
+export interface LessonChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface LessonChatResponse {
+  answer: string;
+  sources: string[];
+}
+
 // ==========================================
 // Service
 // ==========================================
@@ -201,6 +211,21 @@ const lessonService = {
    */
   getQuizResult: async (attemptId: number): Promise<{success: boolean; data: QuizResultData}> => {
     const response = await apiClient.get(`/student/quizzes/attempts/${attemptId}/result`);
+    return response.data;
+  },
+
+  /**
+   * Hoi AI assistant ve noi dung bai hoc/quiz. Backend khong gui answer key cho AI.
+   */
+  askAssistant: async (
+    lessonId: number,
+    message: string,
+    conversationHistory: LessonChatMessage[],
+  ): Promise<{success: boolean; data: LessonChatResponse}> => {
+    const response = await apiClient.post(`/student/lessons/${lessonId}/chat`, {
+      message,
+      conversation_history: conversationHistory,
+    });
     return response.data;
   },
 };

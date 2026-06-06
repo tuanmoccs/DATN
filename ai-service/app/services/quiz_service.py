@@ -47,7 +47,8 @@ async def generate_quiz(request: QuizGenerateRequest) -> QuizGenerateResponse:
 
     additional = f"Additional instructions: {request.additional_instructions}" if request.additional_instructions else ""
 
-    chain = prompt | llm
+    json_llm = llm.bind(response_format={"type": "json_object"})
+    chain = prompt | json_llm
 
     response = await chain.ainvoke({
         "language": request.language,
@@ -71,27 +72,32 @@ async def generate_quiz(request: QuizGenerateRequest) -> QuizGenerateResponse:
 
 def _parse_questions(content: str) -> list[QuizQuestion]:
     """Parse LLM output into structured quiz question objects."""
-    cleaned = content.strip()
-
-    if cleaned.startswith("```"):
-        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    cleaned = cleaned.strip()
+    cleaned = _extract_json_payload(content)
 
     try:
         data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        logger.error(f"Failed to parse quiz JSON: {cleaned[:200]}")
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse quiz JSON: %s | preview=%s", e, cleaned[:500])
         return []
 
     if isinstance(data, dict) and "questions" in data:
         data = data["questions"]
+    elif isinstance(data, dict):
+        logger.error("Quiz JSON object does not contain questions key: %s", list(data.keys()))
+        return []
+    elif not isinstance(data, list):
+        logger.error("Quiz JSON root must be an object or array, got %s", type(data).__name__)
+        return []
 
     questions = []
     for item in data:
+        if not isinstance(item, dict):
+            continue
+
         options = []
         for opt in item.get("options", []):
+            if not isinstance(opt, dict):
+                continue
             options.append(QuizOption(
                 option_text=opt.get("option_text", ""),
                 is_correct=opt.get("is_correct", False),
@@ -108,6 +114,36 @@ def _parse_questions(content: str) -> list[QuizQuestion]:
         ))
 
     return questions
+
+
+def _extract_json_payload(content: str) -> str:
+    cleaned = content.strip()
+
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+        if cleaned.lower().startswith("json\n"):
+            cleaned = cleaned.split("\n", 1)[1]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+
+    cleaned = cleaned.strip()
+    first_object = cleaned.find("{")
+    first_array = cleaned.find("[")
+
+    if first_object == -1 and first_array == -1:
+        return cleaned
+
+    if first_array == -1 or (first_object != -1 and first_object < first_array):
+        start = first_object
+        end = cleaned.rfind("}")
+    else:
+        start = first_array
+        end = cleaned.rfind("]")
+
+    if start == -1 or end == -1 or end <= start:
+        return cleaned
+
+    return cleaned[start:end + 1]
 
 
 TEACHER_CONTEXT_PATTERNS = [

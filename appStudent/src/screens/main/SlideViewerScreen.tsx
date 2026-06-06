@@ -14,6 +14,7 @@ import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {MainStackParamList} from '../../navigation/MainNavigator';
 import lessonService, {SlideInfo} from '../../services/lessonService';
+import {getImageUrl} from '../../config/api';
 
 type SlideViewerRouteProp = RouteProp<MainStackParamList, 'SlideViewer'>;
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -128,7 +129,7 @@ const SlideViewerScreen: React.FC = () => {
           {/* Image */}
           {slide.image_url && (
             <Image
-              source={{uri: slide.image_url}}
+              source={{uri: getImageUrl(slide.image_url)}}
               style={slide.layout === 'image' ? styles.slideImageFull : styles.slideImageHalf}
               resizeMode="contain"
             />

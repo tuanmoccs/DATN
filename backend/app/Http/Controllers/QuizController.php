@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\QuizService;
+use App\Http\Requests\Quiz\CreateQuizRequest;
+use App\Http\Requests\Quiz\ImportQuizQuestionsRequest;
 use App\Http\Requests\Quiz\UpdateQuizRequest;
 use App\Http\Requests\Quiz\UpdateQuizQuestionRequest;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +23,15 @@ class QuizController extends Controller
   public function index(int $lessonId): JsonResponse
   {
     $result = $this->quizService->getQuizzesByLesson($lessonId, auth()->id());
+    return response()->json($result['data'], $result['status']);
+  }
+
+  /**
+   * Tao quiz thu cong cho bai hoc
+   */
+  public function store(CreateQuizRequest $request, int $lessonId): JsonResponse
+  {
+    $result = $this->quizService->createQuiz($lessonId, $request->validated(), auth()->id());
     return response()->json($result['data'], $result['status']);
   }
 
@@ -79,6 +90,19 @@ class QuizController extends Controller
   }
 
   /**
+   * Import cau hoi tu Excel vao quiz
+   */
+  public function importQuestions(ImportQuizQuestionsRequest $request, int $quizId): JsonResponse
+  {
+    $result = $this->quizService->importQuestionsFromExcel(
+      $quizId,
+      $request->file('file'),
+      auth()->id()
+    );
+    return response()->json($result['data'], $result['status']);
+  }
+
+  /**
    * Xóa câu hỏi khỏi quiz
    */
   public function deleteQuestion(int $quizId, int $questionId): JsonResponse
@@ -121,5 +145,14 @@ class QuizController extends Controller
         'message' => 'Lỗi khi xuất PDF: ' . $e->getMessage(),
       ], 500);
     }
+  }
+
+  /**
+   * Lấy danh sách học sinh làm bài và điểm số của quiz
+   */
+  public function getAttempts(int $id): JsonResponse
+  {
+    $result = $this->quizService->getQuizAttempts($id, auth()->id());
+    return response()->json($result['data'], $result['status']);
   }
 }

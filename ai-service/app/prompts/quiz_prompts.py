@@ -41,7 +41,7 @@ LESSON CONTENT:
 - Ensure each question is a NEW scenario that tests the same concept
 - Avoid copying sentences or structures directly from the lesson
 
-Respond with a JSON array of questions. Each question must have:
+Respond with one valid JSON object with a "questions" array. Each question must have:
 - "question_number": integer
 - "content": string (the question text)
 - "question_type": "multiple_choice"
@@ -55,4 +55,21 @@ Respond with a JSON array of questions. Each question must have:
 - Do not ask students about what the teacher should do, how the class should be organized, or how the lesson should be delivered
 - Prefer questions about the actual subject matter students must understand
 
-Return ONLY valid JSON, no other text."""
+Return ONLY valid JSON in this exact shape:
+{{
+  "questions": [
+    {{
+      "question_number": 1,
+      "content": "Question text",
+      "question_type": "multiple_choice",
+      "options": [
+        {{"option_text": "A", "is_correct": false, "explanation": ""}},
+        {{"option_text": "B", "is_correct": true, "explanation": "Why this is correct"}},
+        {{"option_text": "C", "is_correct": false, "explanation": ""}},
+        {{"option_text": "D", "is_correct": false, "explanation": ""}}
+      ],
+      "explanation": "Why the correct answer is correct",
+      "points": 1
+    }}
+  ]
+}}"""

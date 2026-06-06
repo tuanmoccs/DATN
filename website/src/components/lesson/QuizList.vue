@@ -3,21 +3,32 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h3 class="text-lg font-semibold text-gray-800">Quizzes</h3>
-      <button @click="handleRegenerateQuiz" :disabled="regenerating"
-        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
-        <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
-        {{ regenerating ? 'Generating...' : 'Generate New Quiz with AI' }}
-      </button>
+      <div class="flex items-center gap-2">
+        <button @click="showCreateQuiz = true"
+          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <i class="fas fa-plus"></i>
+          Create Quiz
+        </button>
+        <button @click="handleRegenerateQuiz" :disabled="regenerating"
+          class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
+          <i :class="regenerating ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
+          {{ regenerating ? 'Generating...' : 'Generate New Quiz with AI' }}
+        </button>
+      </div>
     </div>
 
     <!-- Regenerating -->
     <div v-if="regenerating" class="p-6 bg-green-50 border border-green-200 rounded-xl mb-6">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 mb-4">
         <i class="fas fa-robot text-green-600 text-xl animate-bounce"></i>
-        <div>
-          <p class="text-sm font-medium text-green-700">AI is generating quiz questions...</p>
-          <p class="text-xs text-green-500">This may take 20-40 seconds. Please wait.</p>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-green-700">{{ generationMessage }}</p>
+          <p class="text-xs text-green-500">You can continue working in other lesson tabs while this runs.</p>
         </div>
+        <span class="text-sm font-semibold text-green-700">{{ generationProgress }}%</span>
+      </div>
+      <div class="h-2 rounded-full bg-green-100 overflow-hidden">
+        <div class="h-full bg-green-600 transition-all duration-500" :style="{ width: `${generationProgress}%` }"></div>
       </div>
     </div>
 
@@ -25,7 +36,19 @@
     <div v-if="quizzes.length === 0 && !regenerating" class="text-center py-12 bg-gray-50 rounded-xl">
       <i class="fas fa-question-circle text-4xl text-gray-300 mb-3"></i>
       <h4 class="text-base font-semibold text-gray-600 mb-1">No quizzes yet</h4>
-      <p class="text-sm text-gray-400">Click "Generate New Quiz with AI" to create quiz questions</p>
+      <p class="text-sm text-gray-400">Create a quiz manually or generate one with AI to start adding questions</p>
+      <div class="mt-5 flex items-center justify-center gap-3">
+        <button @click="showCreateQuiz = true"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <i class="fas fa-plus"></i>
+          Create Quiz
+        </button>
+        <button @click="handleRegenerateQuiz" :disabled="regenerating"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50">
+          <i class="fas fa-magic"></i>
+          Generate with AI
+        </button>
+      </div>
     </div>
 
     <!-- Quiz Cards -->
@@ -70,6 +93,10 @@
             <i :class="exporting === quiz.id ? 'fas fa-spinner fa-spin' : 'fas fa-download'" class="mr-1"></i>
             {{ exporting === quiz.id ? 'Exporting...' : 'Export PDF' }}
           </button>
+          <button @click="viewResults(quiz)"
+            class="px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium">
+            <i class="fas fa-poll mr-1"></i> Results
+          </button>
           <button v-if="quiz.status === 'draft'" @click="publishQuiz(quiz)"
             class="px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-medium">
             <i class="fas fa-check-circle mr-1"></i> Publish
@@ -81,6 +108,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Quiz Modal -->
+    <Teleport to="body">
+      <div v-if="showCreateQuiz" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50" @click="showCreateQuiz = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div class="flex items-center justify-between p-5 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800">Create Quiz</h3>
+            <button @click="showCreateQuiz = false" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-lg"></i>
+            </button>
+          </div>
+
+          <form @submit.prevent="handleCreateQuiz" class="p-5 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Title <span
+                  class="text-red-500">*</span></label>
+              <input v-model="newQuiz.title" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+              <textarea v-model="newQuiz.description" rows="2"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Time limit</label>
+                <input v-model.number="newQuiz.time_limit" type="number" min="1" max="180" placeholder="Minutes"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Max attempts</label>
+                <input v-model.number="newQuiz.max_attempts" type="number" min="1" max="10"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <button type="button" @click="showCreateQuiz = false"
+                class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm">
+                Cancel
+              </button>
+              <button type="submit" :disabled="creatingQuiz"
+                class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50">
+                <i v-if="creatingQuiz" class="fas fa-spinner fa-spin mr-1"></i>
+                {{ creatingQuiz ? 'Creating...' : 'Create Quiz' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Quiz Detail Modal -->
     <Teleport to="body">
@@ -98,6 +178,13 @@
                 class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 <i class="fas fa-plus mr-1"></i> Add Question
               </button>
+              <label
+                class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors cursor-pointer"
+                :class="{ 'opacity-50 pointer-events-none': importingQuestions }">
+                <i :class="importingQuestions ? 'fas fa-spinner fa-spin' : 'fas fa-file-excel'" class="mr-1"></i>
+                {{ importingQuestions ? 'Importing...' : 'Import Excel' }}
+                <input type="file" class="hidden" accept=".xlsx,.xls,.csv,.txt" @change="handleImportQuestions" />
+              </label>
               <button @click="selectedQuiz = null" class="text-gray-400 hover:text-gray-600 p-2">
                 <i class="fas fa-times text-lg"></i>
               </button>
@@ -106,6 +193,14 @@
 
           <!-- Questions -->
           <div class="p-5 space-y-6">
+            <div
+              class="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-start gap-3">
+              <i class="fas fa-info-circle mt-0.5"></i>
+              <p>
+                Excel columns: question, option_a, option_b, option_c, option_d, correct_answer, explanation, points.
+                correct_answer can be A/B/C/D or 1/2/3/4.
+              </p>
+            </div>
             <div v-for="(question, qIdx) in selectedQuiz.questions" :key="question.id"
               class="bg-gray-50 rounded-xl p-5 border border-gray-200">
 
@@ -284,12 +379,18 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Quiz Results Modal -->
+    <Teleport to="body">
+      <QuizResults v-if="selectedQuizForResults" :quiz="selectedQuizForResults" @close="selectedQuizForResults = null" />
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useApi } from '@/plugins/api'
+import QuizResults from './QuizResults.vue'
 
 const props = defineProps({
   quizzes: { type: Array, default: () => [] },
@@ -300,14 +401,22 @@ const emit = defineEmits(['refresh', 'toast'])
 
 const api = useApi()
 const regenerating = ref(false)
+const generationProgress = ref(0)
+const generationMessage = ref('AI is preparing quiz generation...')
+const pollTimer = ref(null)
+const generationStorageKey = computed(() => `lesson-ai-generation:${props.lessonId}:quiz`)
 const exporting = ref(null)
 const selectedQuiz = ref(null)
+const selectedQuizForResults = ref(null)
 const editingQuestion = ref(null)
 const saving = ref(false)
 const deleteTarget = ref(null)
 const deleting = ref(false)
+const showCreateQuiz = ref(false)
+const creatingQuiz = ref(false)
 const showAddQuestion = ref(false)
 const addingQuestion = ref(false)
+const importingQuestions = ref(false)
 
 const editForm = reactive({
   content: '',
@@ -327,6 +436,17 @@ const newQuestion = reactive({
     { option_text: '', is_correct: false, order: 4 },
   ],
 })
+
+const newQuiz = reactive({
+  title: '',
+  description: '',
+  time_limit: null,
+  max_attempts: 1,
+})
+
+const viewResults = (quiz) => {
+  selectedQuizForResults.value = quiz
+}
 
 const viewQuiz = async (quiz) => {
   try {
@@ -376,6 +496,7 @@ const saveEdit = async (question) => {
     selectedQuiz.value = res.data
     editingQuestion.value = null
     emit('toast', 'Question updated successfully!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to update question', 'error')
   } finally {
@@ -390,6 +511,7 @@ const handleDeleteQuestion = async (question) => {
     const res = await api.lesson.getQuizDetail(selectedQuiz.value.id)
     selectedQuiz.value = res.data
     emit('toast', 'Question deleted!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to delete question', 'error')
   }
@@ -409,10 +531,64 @@ const handleAddQuestion = async () => {
     showAddQuestion.value = false
     resetNewQuestion()
     emit('toast', 'Question added successfully!')
+    emit('refresh')
   } catch {
     emit('toast', 'Failed to add question', 'error')
   } finally {
     addingQuestion.value = false
+  }
+}
+
+const handleCreateQuiz = async () => {
+  creatingQuiz.value = true
+  try {
+    const payload = {
+      title: newQuiz.title,
+      description: newQuiz.description || null,
+      time_limit: newQuiz.time_limit || null,
+      max_attempts: newQuiz.max_attempts || 1,
+    }
+
+    const res = await api.lesson.createQuiz(props.lessonId, payload)
+    showCreateQuiz.value = false
+    resetNewQuiz()
+    emit('toast', 'Quiz created successfully!')
+    emit('refresh')
+
+    if (res.data?.id) {
+      await viewQuiz(res.data)
+    }
+  } catch (err) {
+    emit('toast', err.response?.data?.message || 'Failed to create quiz', 'error')
+  } finally {
+    creatingQuiz.value = false
+  }
+}
+
+const resetNewQuiz = () => {
+  newQuiz.title = ''
+  newQuiz.description = ''
+  newQuiz.time_limit = null
+  newQuiz.max_attempts = 1
+}
+
+const handleImportQuestions = async (event) => {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file || !selectedQuiz.value) return
+
+  importingQuestions.value = true
+  try {
+    const res = await api.lesson.importQuizQuestions(selectedQuiz.value.id, file)
+    selectedQuiz.value = res.data
+    emit('toast', res.message || 'Questions imported successfully!')
+    emit('refresh')
+  } catch (err) {
+    const errors = err.response?.data?.errors
+    const firstError = Array.isArray(errors) ? errors[0] : null
+    emit('toast', firstError || err.response?.data?.message || 'Failed to import questions', 'error')
+  } finally {
+    importingQuestions.value = false
   }
 }
 
@@ -462,16 +638,86 @@ const publishQuiz = async (quiz) => {
 
 const handleRegenerateQuiz = async () => {
   regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Sending quiz generation request...'
   try {
-    await api.lesson.regenerateQuiz(props.lessonId)
+    const response = await api.lesson.regenerateQuiz(props.lessonId)
+    const batchId = response.data?.id
+
+    if (batchId) {
+      localStorage.setItem(generationStorageKey.value, String(batchId))
+      generationMessage.value = response.data.message || 'Quiz generation queued...'
+      startPolling(batchId)
+      return
+    }
+
+    generationProgress.value = 100
     emit('toast', 'Quiz generated successfully!')
     emit('refresh')
+    regenerating.value = false
   } catch (err) {
     emit('toast', err.response?.data?.message || 'Failed to generate quiz', 'error')
-  } finally {
     regenerating.value = false
   }
 }
+
+const startPolling = (batchId) => {
+  stopPolling()
+  pollGenerationStatus(batchId, false)
+  pollTimer.value = setInterval(() => pollGenerationStatus(batchId), 2500)
+}
+
+const stopPolling = () => {
+  if (pollTimer.value) {
+    clearInterval(pollTimer.value)
+    pollTimer.value = null
+  }
+}
+
+const pollGenerationStatus = async (batchId, notifyErrors = true) => {
+  try {
+    const response = await api.lesson.getAiGenerationBatchStatus(batchId)
+    const batch = response.data
+    generationProgress.value = batch.progress || 0
+    generationMessage.value = batch.message || 'AI is generating quiz questions...'
+
+    if (batch.status === 'completed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      generationProgress.value = 100
+      regenerating.value = false
+      emit('toast', 'Quiz generated successfully!')
+      emit('refresh')
+    } else if (batch.status === 'failed') {
+      stopPolling()
+      localStorage.removeItem(generationStorageKey.value)
+      regenerating.value = false
+      emit('toast', batch.error_message || 'Failed to generate quiz', 'error')
+    } else {
+      regenerating.value = true
+    }
+  } catch (err) {
+    stopPolling()
+    localStorage.removeItem(generationStorageKey.value)
+    regenerating.value = false
+    if (notifyErrors) {
+      emit('toast', err.response?.data?.message || 'Failed to check generation status', 'error')
+    }
+  }
+}
+
+const resumePendingGeneration = () => {
+  const batchId = localStorage.getItem(generationStorageKey.value)
+  if (!batchId) return
+
+  regenerating.value = true
+  generationProgress.value = 0
+  generationMessage.value = 'Checking quiz generation status...'
+  startPolling(batchId)
+}
+
+onMounted(resumePendingGeneration)
+onUnmounted(stopPolling)
 
 const handleExportQuiz = async (quiz) => {
   exporting.value = quiz.id

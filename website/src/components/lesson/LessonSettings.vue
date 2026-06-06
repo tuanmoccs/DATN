@@ -154,7 +154,7 @@ const saveLesson = async () => {
     })
 
     await api.lesson.updateLesson(props.lesson.id, formData)
-    emit('toast', { type: 'success', message: 'Lesson updated successfully.' })
+    emit('toast','Lesson updated successfully.')
     emit('refresh')
   } catch (err) {
     emit('toast', { type: 'error', message: err.response?.data?.message || 'Failed to update lesson.' })

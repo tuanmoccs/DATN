@@ -71,7 +71,6 @@ class AiServiceClient
   public function processDocumentFile(int $lessonId, string $filePath, string $fileName): array
   {
     $fullPath = $this->resolveStoredFilePath($filePath);
-
     $response = Http::timeout($this->timeout)
       ->withHeaders($this->headers())
       ->attach('file', file_get_contents($fullPath), $fileName)
@@ -92,11 +91,12 @@ class AiServiceClient
   }
 
   /**
-   * Extract text from a file using the Python AI Service (PyMuPDF / python-docx).
+   * Extract text from a file using the Python AI Service (PyMuPDF / python-docx) fallback OCR GPT V4 vision.
    * Handles PDF, DOCX, and TXT correctly including UTF-8/Vietnamese content.
    */
   public function extractFileText(string $filePath, string $fileName): string
   {
+
     $fullPath = $this->resolveStoredFilePath($filePath);
 
     $response = Http::timeout($this->timeout)
@@ -298,14 +298,23 @@ class AiServiceClient
   }
 
   /**
-   * Kiểm tra AI Service có hoạt động không
-   */
-  /**
    * Sinh báo cáo năng lực học sinh từ dữ liệu quiz và assignment qua Python AI Service.
    */
   public function generateCompetencyReport(array $payload): ?array
   {
     $response = $this->invokeAgent('competency_report', $payload);
+    return $response['result'] ?? null;
+  }
+   /**
+   * Kiểm tra AI Service có hoạt động không
+   */
+  /**
+   * Student lesson-aware assistant. Payload quiz context must be sanitized and
+   * must not contain answer keys or quiz explanations.
+   */
+  public function chatWithLesson(array $payload): ?array
+  {
+    $response = $this->invokeAgent('chat', $payload);
     return $response['result'] ?? null;
   }
 

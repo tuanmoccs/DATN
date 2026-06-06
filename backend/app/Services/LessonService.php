@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateLessonAiContentJob;
 use App\Models\Classz;
 use App\Models\Lesson;
 use App\Repositories\Contracts\LessonRepositoryInterface;
 use App\Repositories\Contracts\PresentationRepositoryInterface;
 use App\Repositories\Contracts\QuizRepositoryInterface;
+use App\Models\LessonAiGenerationBatch;
 use App\Models\LessonContent;
 use App\Models\PresentationSlide;
 use App\Models\QuizQuestion;
@@ -177,19 +179,8 @@ class LessonService
           'is_primary' => empty($contentText),
         ]);
 
-        // Extract text từ file để gửi cho AI (dùng Python service - hỗ trợ PDF/DOCX đúng encoding)
-        try {
-          $fileText = $this->aiServiceClient->extractFileText($filePath, $file->getClientOriginalName());
-          if (!empty($contentText)) {
-            $contentText = $contentText . "\n\n" . $fileText;
-          } else {
-            $contentText = $fileText;
-          }
-        } catch (\Exception $e) {
-          Log::warning('File text extraction failed, using text content only', [
-            'error' => $e->getMessage(),
-          ]);
-        }
+        // Extracting file text can be slow, so the queue worker handles it later.
+        $contentText = $contentText ?: '__file_content_pending__';
       }
 
       // Lưu text content nếu có
@@ -207,15 +198,15 @@ class LessonService
 
       DB::commit();
 
-      // Gửi nội dung tới RAG service để indexing (ngoài transaction)
-      if (!empty($contentText)) {
-        $this->indexContentForRAG($lesson->id, $contentText);
-      }
-
-      // Sau khi commit, gọi AI sinh slide & quiz (ngoài transaction)
       $aiResult = null;
-      if (!empty($contentText)) {
-        $aiResult = $this->generateAIContent($lesson, $contentText, $data);
+      $shouldGenerateAi = ($data['generate_slides'] ?? true) || ($data['generate_quiz'] ?? true);
+      if ($shouldGenerateAi && !empty($contentText)) {
+        $aiResult = $this->queueLessonAiGeneration($lesson, $teacherId, 'all', [
+          'generate_slides' => $data['generate_slides'] ?? true,
+          'generate_quiz' => $data['generate_quiz'] ?? true,
+          'slide_count' => $data['slide_count'] ?? 10,
+          'question_count' => $data['question_count'] ?? 5,
+        ]);
       }
 
       $lesson->load(['content', 'presentation.slides', 'quizzes.questions.options']);
@@ -224,7 +215,7 @@ class LessonService
         'status' => 201,
         'data' => [
           'success' => true,
-          'message' => 'Tạo bài học thành công' . ($aiResult ? '. AI đã sinh slide và câu hỏi.' : ''),
+          'message' => 'Tạo bài học thành công' . ($aiResult ? '. AI content đang được sinh trong nền.' : ''),
           'data' => $lesson,
           'ai_generation' => $aiResult,
         ],
@@ -254,6 +245,7 @@ class LessonService
       // Kiểm tra quyền
       if ($lesson->created_by !== $teacherId) {
         if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
           return [
             'status' => 403,
             'data' => [
@@ -348,6 +340,7 @@ class LessonService
 
       if ($lesson->created_by !== $teacherId) {
         if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
           return [
             'status' => 403,
             'data' => [
@@ -382,6 +375,44 @@ class LessonService
   /**
    * Gọi AI sinh lại slide cho bài học
    */
+  public function queueRegenerateSlides(int $lessonId, int $teacherId, int $slideCount = 10): array
+  {
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['content', 'class']);
+      $permissionError = $this->authorizeLessonTeacher($lesson, $teacherId);
+      if ($permissionError) return $permissionError;
+
+      if (!$this->lessonHasContentSource($lesson)) {
+        return [
+          'status' => 400,
+          'data' => [
+            'success' => false,
+            'message' => 'Bài học chưa có nội dung để sinh slide',
+          ],
+        ];
+      }
+
+      $batch = $this->queueLessonAiGeneration($lesson, $teacherId, 'slides', [
+        'slide_count' => $slideCount,
+      ]);
+
+      return [
+        'status' => 202,
+        'data' => [
+          'success' => true,
+          'message' => 'Đã đưa yêu cầu sinh slide vào hàng đợi',
+          'data' => $batch,
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Queue regenerate slides failed', ['error' => $e->getMessage()]);
+      return [
+        'status' => 500,
+        'data' => ['success' => false, 'message' => 'Lỗi khi đưa yêu cầu sinh slide vào hàng đợi: ' . $e->getMessage()],
+      ];
+    }
+  }
+
   public function regenerateSlides(int $lessonId, int $teacherId, int $slideCount = 10): array
   {
     try {
@@ -492,9 +523,188 @@ class LessonService
     }
   }
 
+  public function updateSlides(int $lessonId, array $slides, int $teacherId): array
+  {
+    DB::beginTransaction();
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['presentation.slides', 'class']);
+
+      if ($lesson->created_by !== $teacherId) {
+        if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          DB::rollBack();
+          return [
+            'status' => 403,
+            'data' => [
+              'success' => false,
+              'message' => 'You do not have permission to edit slides for this lesson',
+            ],
+          ];
+        }
+      }
+
+      $presentation = $lesson->presentation;
+      if (!$presentation) {
+        $presentation = $this->presentationRepository->create([
+          'lesson_id' => $lesson->id,
+          'current_version' => 1,
+          'status' => 'draft',
+          'generated_by' => 'teacher',
+          'ai_prompt' => null,
+        ]);
+      }
+
+      $existingSlideIds = $presentation->slides()->pluck('id')->all();
+      $payloadIds = collect($slides)
+        ->pluck('id')
+        ->filter()
+        ->map(fn($id) => (int) $id)
+        ->all();
+
+      $invalidIds = array_diff($payloadIds, $existingSlideIds);
+      if (!empty($invalidIds)) {
+        DB::rollBack();
+        return [
+          'status' => 422,
+          'data' => [
+            'success' => false,
+            'message' => 'One or more slides do not belong to this lesson',
+          ],
+        ];
+      }
+
+      $presentation->slides()
+        ->whereNotIn('id', $payloadIds)
+        ->delete();
+
+      foreach (array_values($slides) as $index => $slideData) {
+        $data = [
+          'presentation_id' => $presentation->id,
+          'order' => $index + 1,
+          'title' => $this->cleanText($slideData['title'] ?? null),
+          'content' => $this->cleanText($slideData['content'] ?? ''),
+          'notes' => $this->cleanText($slideData['notes'] ?? null),
+          'layout' => $slideData['layout'] ?? 'content',
+          'image_url' => $this->cleanText($slideData['image_url'] ?? null, 500),
+        ];
+
+        if (!empty($slideData['id'])) {
+          PresentationSlide::where('presentation_id', $presentation->id)
+            ->where('id', $slideData['id'])
+            ->update($data);
+        } else {
+          PresentationSlide::create($data);
+        }
+      }
+
+      DB::commit();
+
+      $presentation->load('slides');
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'message' => 'Slides updated successfully',
+          'data' => $presentation,
+        ],
+      ];
+    } catch (\Exception $e) {
+      DB::rollBack();
+      Log::error('Update slides failed', ['lesson_id' => $lessonId, 'error' => $e->getMessage()]);
+
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Failed to update slides: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
+  public function uploadSlideImage(int $lessonId, int $teacherId, $imageFile): array
+  {
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['class']);
+
+      if ($lesson->created_by !== $teacherId) {
+        if ($lesson->class && $lesson->class->teacher_id !== $teacherId) {
+          return [
+            'status' => 403,
+            'data' => [
+              'success' => false,
+              'message' => 'You do not have permission to upload images for this lesson',
+            ],
+          ];
+        }
+      }
+
+      $path = $imageFile->store('slides', 'public');
+
+      return [
+        'status' => 201,
+        'data' => [
+          'success' => true,
+          'message' => 'Slide image uploaded successfully',
+          'path' => $path,
+          'image_url' => '/storage/' . $path,
+          'url' => asset('storage/' . $path),
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Upload slide image failed', ['lesson_id' => $lessonId, 'error' => $e->getMessage()]);
+
+      return [
+        'status' => 500,
+        'data' => [
+          'success' => false,
+          'message' => 'Failed to upload slide image: ' . $e->getMessage(),
+        ],
+      ];
+    }
+  }
+
   /**
-   * Gọi AI sinh lại quiz cho bài học
+   * Regenerate quiz questions for the lesson.
    */
+  public function queueRegenerateQuiz(int $lessonId, int $teacherId, int $questionCount = 5): array
+  {
+    try {
+      $lesson = $this->lessonRepository->getLessonWithRelations($lessonId, ['content', 'class']);
+      $permissionError = $this->authorizeLessonTeacher($lesson, $teacherId);
+      if ($permissionError) return $permissionError;
+
+      if (!$this->lessonHasContentSource($lesson)) {
+        return [
+          'status' => 400,
+          'data' => [
+            'success' => false,
+            'message' => 'Bài học chưa có nội dung để sinh câu hỏi',
+          ],
+        ];
+      }
+
+      $batch = $this->queueLessonAiGeneration($lesson, $teacherId, 'quiz', [
+        'question_count' => $questionCount,
+      ]);
+
+      return [
+        'status' => 202,
+        'data' => [
+          'success' => true,
+          'message' => 'Đã đưa yêu cầu sinh quiz vào hàng đợi',
+          'data' => $batch,
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Queue regenerate quiz failed', ['error' => $e->getMessage()]);
+      return [
+        'status' => 500,
+        'data' => ['success' => false, 'message' => 'Lỗi khi đưa yêu cầu sinh quiz vào hàng đợi: ' . $e->getMessage()],
+      ];
+    }
+  }
+
   public function regenerateQuiz(int $lessonId, int $teacherId, int $questionCount = 5): array
   {
     try {
@@ -606,6 +816,143 @@ class LessonService
         ],
       ];
     }
+  }
+
+  private function queueLessonAiGeneration($lesson, int $teacherId, string $type, array $options): LessonAiGenerationBatch
+  {
+    $batch = LessonAiGenerationBatch::create([
+      'lesson_id' => $lesson->id,
+      'teacher_id' => $teacherId,
+      'type' => $type,
+      'status' => 'queued',
+      'progress' => 0,
+      'slide_count' => (int) ($options['slide_count'] ?? 10),
+      'question_count' => (int) ($options['question_count'] ?? 5),
+      'options' => $options,
+      'message' => 'Waiting for queue worker',
+    ]);
+
+    GenerateLessonAiContentJob::dispatch($batch->id);
+
+    return $batch->fresh();
+  }
+
+  public function getAiGenerationBatchStatus(int $batchId, int $teacherId): array
+  {
+    try {
+      $batch = LessonAiGenerationBatch::with('lesson:id,title')
+        ->where('teacher_id', $teacherId)
+        ->findOrFail($batchId);
+
+      return [
+        'status' => 200,
+        'data' => [
+          'success' => true,
+          'data' => $batch,
+        ],
+      ];
+    } catch (\Exception $e) {
+      Log::error('Get lesson AI generation batch status failed', ['error' => $e->getMessage()]);
+      return [
+        'status' => 500,
+        'data' => ['success' => false, 'message' => 'Lỗi khi lấy trạng thái sinh AI content'],
+      ];
+    }
+  }
+
+  public function processAiGenerationBatch(int $batchId): void
+  {
+    $batch = LessonAiGenerationBatch::findOrFail($batchId);
+    if (!in_array($batch->status, ['queued', 'processing'], true)) {
+      return;
+    }
+
+    $batch->update([
+      'status' => 'processing',
+      'progress' => 5,
+      'message' => 'Preparing lesson content',
+      'started_at' => $batch->started_at ?? now(),
+      'error_message' => null,
+    ]);
+
+    try {
+      if ($batch->type === 'all') {
+        $lesson = $this->lessonRepository->getLessonWithRelations($batch->lesson_id, ['content']);
+        $contentText = $this->gatherLessonContent($lesson);
+        if (empty($contentText)) {
+          throw new \RuntimeException('Bài học chưa có nội dung để sinh AI content');
+        }
+
+        $batch->update(['progress' => 20, 'message' => 'Indexing lesson content']);
+        $this->indexContentForRAG($lesson->id, $contentText);
+
+        $batch->update(['progress' => 35, 'message' => 'Generating slides and quiz']);
+        $result = $this->generateAIContent($lesson, $contentText, $batch->options ?? []);
+
+        $batch->update([
+          'status' => 'completed',
+          'progress' => 100,
+          'message' => 'AI content generated',
+          'result' => $result,
+          'finished_at' => now(),
+        ]);
+        return;
+      }
+
+      $batch->update([
+        'progress' => 20,
+        'message' => $batch->type === 'slides' ? 'Generating slides' : 'Generating quiz',
+      ]);
+
+      $result = $batch->type === 'slides'
+        ? $this->regenerateSlides($batch->lesson_id, $batch->teacher_id, $batch->slide_count)
+        : $this->regenerateQuiz($batch->lesson_id, $batch->teacher_id, $batch->question_count);
+
+      if (!($result['data']['success'] ?? false)) {
+        throw new \RuntimeException($result['data']['message'] ?? 'AI generation failed');
+      }
+
+      $batch->update([
+        'status' => 'completed',
+        'progress' => 100,
+        'message' => 'AI generation completed',
+        'result' => $result['data'],
+        'finished_at' => now(),
+      ]);
+    } catch (\Throwable $e) {
+      $this->markAiGenerationBatchFailed($batchId, $e->getMessage());
+      throw $e;
+    }
+  }
+
+  public function markAiGenerationBatchFailed(int $batchId, string $message): void
+  {
+    LessonAiGenerationBatch::where('id', $batchId)->update([
+      'status' => 'failed',
+      'progress' => 100,
+      'message' => 'AI generation failed',
+      'error_message' => $message,
+      'finished_at' => now(),
+    ]);
+  }
+
+  private function authorizeLessonTeacher($lesson, int $teacherId): ?array
+  {
+    if ($lesson->created_by === $teacherId) {
+      return null;
+    }
+
+    if ($lesson->class && $lesson->class->teacher_id === $teacherId) {
+      return null;
+    }
+
+    return [
+      'status' => 403,
+      'data' => [
+        'success' => false,
+        'message' => 'Bạn không có quyền thực hiện',
+      ],
+    ];
   }
 
   /**
@@ -934,6 +1281,14 @@ class LessonService
     }
 
     return implode("\n\n", $contentParts);
+  }
+
+  private function lessonHasContentSource($lesson): bool
+  {
+    return $lesson->content->contains(function ($content) {
+      return ($content->content_type === 'text' && !empty($content->content_text))
+        || !empty($content->file_path);
+    });
   }
 
   /**

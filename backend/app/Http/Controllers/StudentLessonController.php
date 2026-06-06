@@ -43,6 +43,28 @@ class StudentLessonController extends Controller
   /**
    * Bắt đầu làm quiz
    */
+  /**
+   * Chat voi AI assistant theo ngu canh bai hoc/quiz.
+   */
+  public function chat(Request $request, int $lessonId): JsonResponse
+  {
+    $validated = $request->validate([
+      'message' => 'required|string|min:1|max:2000',
+      'conversation_history' => 'sometimes|array|max:20',
+      'conversation_history.*.role' => 'required_with:conversation_history|string|in:user,assistant',
+      'conversation_history.*.content' => 'required_with:conversation_history|string|max:2000',
+    ]);
+
+    $result = $this->studentLessonService->askAssistant(
+      $lessonId,
+      auth()->id(),
+      $validated['message'],
+      $validated['conversation_history'] ?? []
+    );
+
+    return response()->json($result['data'], $result['status']);
+  }
+
   public function startQuiz(int $quizId): JsonResponse
   {
     $result = $this->studentLessonService->startQuizAttempt($quizId, auth()->id());

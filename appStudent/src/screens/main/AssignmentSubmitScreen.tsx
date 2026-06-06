@@ -39,22 +39,24 @@ const AssignmentSubmitScreen: React.FC = () => {
 
   const pickImage = async () => {
     try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        selectionLimit: 5,
-        quality: 0.8,
+      const results = await pick({
+        type: [types.images],
+        allowMultiSelection: true,
       });
 
-      if (result.assets && result.assets.length > 0) {
-        const newFiles: SelectedFile[] = result.assets.map((asset: any) => ({
-          uri: asset.uri || '',
-          name: asset.fileName || `image_${Date.now()}.jpg`,
-          type: asset.type || 'image/jpeg',
-          size: asset.fileSize,
+      if (results && results.length > 0) {
+        const newFiles: SelectedFile[] = results.map((doc: any) => ({
+          uri: doc.uri || '',
+          name: doc.name || `image_${Date.now()}.jpg`,
+          type: doc.type || 'image/jpeg',
+          size: doc.size || undefined,
         }));
         setFiles(prev => [...prev, ...newFiles]);
       }
     } catch (error) {
+      if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
+        return;
+      }
       console.error('Error picking image:', error);
       Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
@@ -161,12 +163,12 @@ const AssignmentSubmitScreen: React.FC = () => {
                 },
               ]);
             } else {
-              Alert.alert('Lỗi', (response as any).message || 'Không thể nộp bài');
+              Alert.alert('Thông báo', (response as any).message || 'Không thể nộp bài');
             }
           } catch (error: any) {
             const message =
               error?.response?.data?.message || 'Đã xảy ra lỗi khi nộp bài';
-            Alert.alert('Lỗi', message);
+            Alert.alert('Thông báo', message);
           } finally {
             setSubmitting(false);
           }

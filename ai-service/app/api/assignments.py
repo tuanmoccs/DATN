@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.schemas.assignment import AssignmentGradeRequest, AssignmentGradeResponse
-from app.services.assignment_service import extract_reference_text, extract_submission_text, grade_assignment
+from app.services.assignment_service import extract_reference_text, extract_submission_data, grade_assignment
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -21,15 +21,18 @@ async def grade_assignment_endpoint(
     """Extract teacher reference files and student files, then grade the submission with the LLM."""
     try:
         assignment_reference_text = await extract_reference_text(reference_files)
-        student_answer = await extract_submission_text(files)
-        result = await grade_assignment(AssignmentGradeRequest(
-            assignment_title=assignment_title,
-            assignment_description=assignment_description,
-            assignment_instructions=assignment_instructions,
-            assignment_reference_text=assignment_reference_text,
-            max_score=max_score,
-            student_answer=student_answer,
-        ))
+        student_answer, student_images = await extract_submission_data(files)
+        result = await grade_assignment(
+            AssignmentGradeRequest(
+                assignment_title=assignment_title,
+                assignment_description=assignment_description,
+                assignment_instructions=assignment_instructions,
+                assignment_reference_text=assignment_reference_text,
+                max_score=max_score,
+                student_answer=student_answer,
+            ),
+            student_images=student_images,
+        )
 
         if not result.success:
             raise HTTPException(status_code=400, detail=result.message)

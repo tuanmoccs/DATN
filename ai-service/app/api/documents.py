@@ -81,7 +81,12 @@ async def process_document(
     # Delete old chunks for this lesson before re-processing
     delete_lesson_chunks(lesson_id)
 
-    chunks = chunk_text(text, lesson_id)
+    chunks = chunk_text(
+        text,
+        lesson_id,
+        source_type=content_type,
+        source_name=filename,
+    )
     chunks_count = store_chunks(chunks)
 
     return DocumentProcessResponse(
@@ -113,7 +118,12 @@ async def analyze_document_demo(
     if not text.strip():
         raise HTTPException(status_code=400, detail="No text content found in the document.")
 
-    chunks = chunk_text(text, lesson_id)
+    chunks = chunk_text(
+        text,
+        lesson_id,
+        source_type=content_type,
+        source_name=filename,
+    )
     if store_to_chroma:
         delete_lesson_chunks(lesson_id)
         chunks_count = store_chunks(chunks)
@@ -171,7 +181,12 @@ async def process_document_text(request: DocumentTextRequest):
     # Delete old chunks for this lesson before re-processing
     delete_lesson_chunks(request.lesson_id)
 
-    chunks = chunk_text(request.text, request.lesson_id)
+    chunks = chunk_text(
+        request.text,
+        request.lesson_id,
+        source_type="text",
+        source_name=f"lesson-{request.lesson_id}-text",
+    )
     chunks_count = store_chunks(chunks)
 
     return DocumentProcessResponse(

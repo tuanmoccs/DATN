@@ -1,0 +1,38 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - feat/deploy # Automatically deploys when you push code to this branch
+
+jobs:
+  deploy:
+    name: Continuous Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          # You can use SSH Password (simpler) or SSH Key (more secure)
+          password: ${{ secrets.VPS_PASSWORD }}
+          # key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "==== STARTING DEPLOYMENT ===="
+            cd ~/DATN
+            
+            # 1. Pull latest changes from Git
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            
+            # 2. Deploy and rebuild changed containers dynamically
+            docker compose up -d --build
+            
+            # 3. Optimize disk space (crucial for 1GB/20GB storage VPS)
+            docker image prune -f
+            
+            echo "==== DEPLOYMENT SUCCESSFUL ===="

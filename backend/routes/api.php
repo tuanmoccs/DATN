@@ -97,6 +97,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('student/lessons')->group(function () {
         Route::get('/{lessonId}', [StudentLessonController::class, 'show']);
         Route::post('/{lessonId}/slide-progress', [StudentLessonController::class, 'updateSlideProgress']);
+        Route::post('/{lessonId}/chat', [StudentLessonController::class, 'chat'])->middleware('throttle:ai');
     });
     Route::prefix('student/quizzes')->group(function () {
         Route::post('/{quizId}/start', [StudentLessonController::class, 'startQuiz']);
@@ -113,8 +114,11 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [LessonController::class, 'store']);
         Route::get('/{id}', [LessonController::class, 'show']);
         Route::post('/{id}', [LessonController::class, 'update']); // POST thay PUT vì có file upload
+        Route::post('/{id}/slides/image', [LessonController::class, 'uploadSlideImage']);
+        Route::put('/{id}/slides', [LessonController::class, 'updateSlides']);
         Route::delete('/{id}', [LessonController::class, 'destroy']);
         Route::get('/class/{classId}/search', [LessonController::class, 'search']);
+        Route::get('/ai-generation-batches/{batchId}', [LessonController::class, 'aiGenerationStatus']);
 
         // AI Generation (throttle riêng, cho phép request chạy lâu)
         Route::middleware('throttle:ai')->group(function () {
@@ -128,7 +132,9 @@ Route::middleware('auth:api')->group(function () {
     // ==========================================
     Route::prefix('teacher/quizzes')->group(function () {
         Route::get('/lesson/{lessonId}', [QuizController::class, 'index']);
+        Route::post('/lesson/{lessonId}', [QuizController::class, 'store']);
         Route::get('/{id}', [QuizController::class, 'show']);
+        Route::get('/{id}/attempts', [QuizController::class, 'getAttempts']);
         Route::get('/{id}/export-pdf', [QuizController::class, 'exportPDF']);
         Route::put('/{id}', [QuizController::class, 'update']);
         Route::delete('/{id}', [QuizController::class, 'destroy']);
@@ -136,6 +142,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Quản lý câu hỏi
         Route::post('/{quizId}/questions', [QuizController::class, 'addQuestion']);
+        Route::post('/{quizId}/questions/import-excel', [QuizController::class, 'importQuestions']);
         Route::put('/{quizId}/questions/{questionId}', [QuizController::class, 'updateQuestion']);
         Route::delete('/{quizId}/questions/{questionId}', [QuizController::class, 'deleteQuestion']);
     });
@@ -158,6 +165,10 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('teacher/competency-reports')->group(function () {
         Route::get('/', [AiCompetencyReportController::class, 'index']);
         Route::post('/generate', [AiCompetencyReportController::class, 'generate'])->middleware('throttle:ai');
+        Route::post('/class/{classId}/generate-all', [AiCompetencyReportController::class, 'generateClassReports'])->middleware('throttle:ai');
+        Route::get('/generate-batches/{batchId}', [AiCompetencyReportController::class, 'generateBatchStatus']);
+        Route::get('/class/{classId}/export-pdf', [AiCompetencyReportController::class, 'exportClassPdf']);
+        Route::get('/class/{classId}/risk-alerts', [AiCompetencyReportController::class, 'riskAlerts']);
         Route::get('/{id}', [AiCompetencyReportController::class, 'show']);
         Route::put('/{id}', [AiCompetencyReportController::class, 'update']);
     });
