@@ -18,6 +18,10 @@ class GradeAssignmentRequest extends FormRequest
     return [
       'score' => ['required', 'numeric', 'min:0'],
       'feedback' => ['nullable', 'string', 'max:10000'],
+      'ai_review' => ['nullable', 'array'],
+      'ai_review.reviewed_score' => ['nullable', 'numeric', 'min:0'],
+      'ai_review.decisions' => ['nullable', 'array'],
+      'ai_review.decisions.*' => ['required', 'in:accepted,rejected'],
     ];
   }
 

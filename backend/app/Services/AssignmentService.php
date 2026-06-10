@@ -529,14 +529,30 @@ class AssignmentService
 
       $grading = $submission->grading;
       if ($grading) {
-        $grading->update([
+        $gradingData = [
           'graded_by' => $teacherId,
           'score' => $score,
           'max_score' => $maxScore,
           'percentage' => $percentage,
           'feedback' => $data['feedback'] ?? $grading->feedback,
           'graded_at' => now(),
-        ]);
+        ];
+
+        if (!empty($data['ai_review']) && $grading->ai_feedback) {
+          $aiFeedback = json_decode($grading->ai_feedback, true);
+          if (is_array($aiFeedback)) {
+            $aiFeedback['teacher_review'] = [
+              'decisions' => $data['ai_review']['decisions'] ?? [],
+              'reviewed_score' => $data['ai_review']['reviewed_score'] ?? $score,
+              'final_score' => $score,
+              'reviewed_by' => $teacherId,
+              'reviewed_at' => now()->toISOString(),
+            ];
+            $gradingData['ai_feedback'] = json_encode($aiFeedback, JSON_UNESCAPED_UNICODE);
+          }
+        }
+
+        $grading->update($gradingData);
       } else {
         $grading = Grading::create([
           'submission_id' => $submissionId,

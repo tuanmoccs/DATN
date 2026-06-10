@@ -209,6 +209,136 @@
                     <div class="text-sm text-gray-700">{{ aiResult.feedback }}</div>
                   </div>
 
+                  <!-- Criterion scores -->
+                  <div v-if="aiResult.criteria?.length" class="bg-white rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-600 mb-2">
+                      <i class="fas fa-list-check mr-1"></i>Score by criterion
+                    </div>
+                    <div class="space-y-2">
+                      <div v-for="criterion in aiResult.criteria" :key="criterion.criterion"
+                        class="rounded-lg border border-gray-100 p-2.5">
+                        <div class="flex items-center justify-between gap-3">
+                          <span class="text-sm font-medium text-gray-700">{{ criterion.criterion }}</span>
+                          <span class="text-sm font-semibold text-purple-600">
+                            {{ criterion.suggested_score }}/{{ criterion.max_score }}
+                          </span>
+                        </div>
+                        <p v-if="criterion.reason" class="text-xs text-gray-500 mt-1">{{ criterion.reason }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Evidence annotations -->
+                  <div v-if="aiResult.annotations?.length" class="bg-white rounded-lg p-3">
+                    <div class="mb-3 rounded-lg bg-blue-50 p-3 text-xs text-blue-800">
+                      <div><strong>Accept:</strong> confirm the AI judgment and keep its point impact.</div>
+                      <div class="mt-1">
+                        <strong>Reject:</strong> mark the AI judgment as wrong and remove its point impact.
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-medium text-gray-600">
+                        <i class="fas fa-highlighter mr-1"></i>Correct/incorrect evidence in the submission
+                      </div>
+                      <div class="text-xs text-gray-500">
+                        {{ acceptedAnnotationCount }} accepted · {{ rejectedAnnotationCount }} rejected ·
+                        {{ pendingAnnotationCount }} pending
+                      </div>
+                    </div>
+
+                    <div class="space-y-3">
+                      <div v-for="annotation in aiResult.annotations" :key="annotation.id"
+                        class="rounded-lg border p-3" :class="annotationCardClass(annotation)">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                              :class="annotationBadgeClass(annotation.verdict)">
+                              {{ annotationVerdictLabel(annotation.verdict) }}
+                            </span>
+                            <span class="ml-2 text-xs text-gray-500">
+                              {{ annotation.file_name }}
+                              <template v-if="annotation.line_start">
+                                · line {{ annotation.line_start }}<template
+                                  v-if="annotation.line_end !== annotation.line_start">-{{ annotation.line_end }}</template>
+                              </template>
+                            </span>
+                          </div>
+                          <span v-if="annotation.score_impact" class="text-xs font-semibold"
+                            :class="annotation.score_impact > 0 ? 'text-green-600' : 'text-red-600'">
+                            {{ annotation.score_impact > 0 ? '+' : '' }}{{ annotation.score_impact }} point
+                          </span>
+                          <span v-else-if="annotation.verdict === 'unclear'" class="text-xs font-medium text-gray-500">
+                            No automatic point impact
+                          </span>
+                        </div>
+
+                        <blockquote v-if="annotation.quote"
+                          class="mt-2 border-l-4 border-gray-300 bg-white/70 px-3 py-2 text-sm italic text-gray-700">
+                          “{{ annotation.quote }}”
+                        </blockquote>
+                        <p class="mt-2 text-sm text-gray-700">{{ annotation.explanation }}</p>
+                        <p v-if="annotation.correction" class="mt-1 text-sm text-blue-700">
+                          <span class="font-medium">Correction:</span> {{ annotation.correction }}
+                        </p>
+
+                        <div class="mt-3 flex items-center justify-between">
+                          <a v-if="submissionFileUrl(annotation.file_name)"
+                            :href="submissionFileUrl(annotation.file_name)" target="_blank"
+                            class="text-xs text-blue-600 hover:underline">
+                            <i class="fas fa-image mr-1"></i>Open original image
+                          </a>
+                          <span v-else></span>
+                          <div class="flex gap-2">
+                            <button type="button" @click="setAnnotationDecision(annotation.id, 'rejected')"
+                              class="rounded px-2.5 py-1 text-xs font-medium"
+                              :class="annotationDecisions[annotation.id] === 'rejected'
+                                ? 'bg-red-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'">
+                              Reject AI judgment
+                            </button>
+                            <button type="button" @click="setAnnotationDecision(annotation.id, 'accepted')"
+                              class="rounded px-2.5 py-1 text-xs font-medium"
+                              :class="annotationDecisions[annotation.id] === 'accepted'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'">
+                              Accept AI judgment
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 rounded-lg border border-purple-200 bg-purple-50 p-3">
+                      <div class="flex items-center justify-between gap-4">
+                        <div>
+                          <div class="text-xs text-gray-500">Score after teacher review</div>
+                          <div class="text-lg font-bold text-purple-700">
+                            {{ reviewedScore }}/{{ aiResult.max_score }}
+                          </div>
+                        </div>
+                        <button type="button" :disabled="pendingAnnotationCount > 0" @click="applyReviewedResult"
+                          class="rounded-lg bg-purple-600 px-3 py-2 text-xs font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+                          {{ pendingAnnotationCount > 0
+                            ? `Review ${pendingAnnotationCount} remaining`
+                            : 'Use reviewed score and feedback' }}
+                        </button>
+                      </div>
+                      <p class="mt-2 text-xs text-gray-500">
+                        Rejecting a deduction restores those points. Rejecting awarded credit removes those points.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div v-if="aiResult.missing_requirements?.length" class="bg-white rounded-lg p-3">
+                    <div class="text-xs font-medium text-orange-600 mb-1">
+                      <i class="fas fa-triangle-exclamation mr-1"></i>Missing requirements
+                    </div>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                      <li v-for="item in aiResult.missing_requirements" :key="item">• {{ item }}</li>
+                    </ul>
+                  </div>
+
                   <!-- Strengths -->
                   <div v-if="aiResult.strengths?.length" class="bg-white rounded-lg p-3">
                     <div class="text-xs font-medium text-green-600 mb-1"><i
@@ -304,10 +434,14 @@
                     class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
                     Close
                   </button>
-                  <button type="submit" :disabled="grading"
+                  <button type="submit" :disabled="grading || pendingAnnotationCount > 0"
                     class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium">
                     <i v-if="grading" class="fas fa-spinner fa-spin mr-1"></i>
-                    {{ grading ? 'Saving...' : 'Done' }}
+                    {{ grading
+                      ? 'Saving...'
+                      : pendingAnnotationCount > 0
+                        ? `Review ${pendingAnnotationCount} AI judgments`
+                        : 'Done' }}
                   </button>
                 </div>
               </form>
@@ -485,6 +619,7 @@ const showSubmissionModal = ref(false)
 const showEditModal = ref(false)
 const selectedSubmission = ref(null)
 const aiResult = ref(null)
+const annotationDecisions = reactive({})
 const toast = reactive({ show: false, message: '', type: 'success' })
 
 // Edit form
@@ -513,6 +648,41 @@ const isOverdue = computed(() => {
 const gradingPercentage = computed(() => {
   if (!assignment.value?.max_score || !gradingForm.score) return '0.00'
   return ((gradingForm.score / assignment.value.max_score) * 100).toFixed(2)
+})
+
+const acceptedAnnotationCount = computed(() => {
+  if (!aiResult.value?.annotations) return 0
+  return aiResult.value.annotations.filter(
+    annotation => annotationDecisions[annotation.id] === 'accepted'
+  ).length
+})
+
+const rejectedAnnotationCount = computed(() => {
+  if (!aiResult.value?.annotations) return 0
+  return aiResult.value.annotations.filter(
+    annotation => annotationDecisions[annotation.id] === 'rejected'
+  ).length
+})
+
+const pendingAnnotationCount = computed(() => {
+  if (!aiResult.value?.annotations) return 0
+  return aiResult.value.annotations.filter(
+    annotation => !['accepted', 'rejected'].includes(annotationDecisions[annotation.id])
+  ).length
+})
+
+const reviewedScore = computed(() => {
+  if (!aiResult.value) return 0
+
+  const rejectedImpact = (aiResult.value.annotations || []).reduce((total, annotation) => {
+    return annotationDecisions[annotation.id] === 'rejected'
+      ? total + Number(annotation.score_impact || 0)
+      : total
+  }, 0)
+  const adjustedScore = Number(aiResult.value.suggested_score || 0) - rejectedImpact
+  const maxScore = Number(aiResult.value.max_score || assignment.value?.max_score || 0)
+
+  return Math.min(maxScore, Math.max(0, adjustedScore)).toFixed(2)
 })
 
 // Mount
@@ -621,6 +791,7 @@ const confirmDelete = async () => {
 const openSubmissionDetail = async (submission) => {
   selectedSubmission.value = submission
   aiResult.value = null
+  resetAnnotationDecisions()
   showSubmissionModal.value = true
 
   // Pre-populate grading form
@@ -632,6 +803,7 @@ const openSubmissionDetail = async (submission) => {
     if (submission.grading.ai_feedback && submission.grading.ai_status === 'completed') {
       try {
         aiResult.value = JSON.parse(submission.grading.ai_feedback)
+        initializeAnnotationDecisions()
       } catch (e) { /* ignore */ }
     }
   } else {
@@ -647,6 +819,7 @@ const openSubmissionDetail = async (submission) => {
     if (res.data.grading?.ai_feedback && res.data.grading?.ai_status === 'completed') {
       try {
         aiResult.value = JSON.parse(res.data.grading.ai_feedback)
+        initializeAnnotationDecisions()
       } catch (e) { /* ignore */ }
     }
   } catch (e) {
@@ -668,6 +841,7 @@ const requestAIGrade = async (submissionId) => {
     } else {
       aiResult.value = res.data
     }
+    initializeAnnotationDecisions()
     showToast('AI grading completed')
 
     // Refresh assignment data
@@ -681,11 +855,27 @@ const requestAIGrade = async (submissionId) => {
 
 // Submit final grading
 const submitGrading = async () => {
+  if (pendingAnnotationCount.value > 0) {
+    showToast(`Please review ${pendingAnnotationCount.value} remaining AI judgments`, 'error')
+    return
+  }
+
   grading.value = true
   try {
+    const decisions = Object.fromEntries(
+      Object.entries(annotationDecisions).filter(([, decision]) =>
+        ['accepted', 'rejected'].includes(decision)
+      )
+    )
     await api.assignment.finalizeGrading(selectedSubmission.value.id, {
       score: gradingForm.score,
       feedback: gradingForm.feedback,
+      ai_review: aiResult.value?.annotations?.length
+        ? {
+            decisions,
+            reviewed_score: Number(reviewedScore.value),
+          }
+        : null,
     })
     showToast('Grading saved successfully')
     showSubmissionModal.value = false
@@ -736,8 +926,14 @@ const formatDate = (date) => {
 
 const getFileUrl = (path) => {
   if (!path) return ''
-  const baseUrl = import.meta.env.VITE_API_URL || 'https://doantnta.site'
-  return `${baseUrl}/storage/${path}`
+  if (/^https?:\/\//i.test(path)) return path
+
+  const storageBaseUrl = (
+    import.meta.env.VITE_STORAGE_ENDPOINT || 'http://localhost:8000/storage'
+  ).replace(/\/+$/, '')
+  const relativePath = path.replace(/^\/?(storage\/)?/, '')
+
+  return `${storageBaseUrl}/${relativePath}`
 }
 
 const getFileIcon = (name) => {
@@ -770,6 +966,99 @@ const getInitials = (name) => {
 const gradeColor = (letter) => {
   const map = { A: 'text-green-600', B: 'text-blue-600', C: 'text-yellow-600', D: 'text-orange-600', F: 'text-red-600' }
   return map[letter] || 'text-gray-600'
+}
+
+const initializeAnnotationDecisions = () => {
+  resetAnnotationDecisions()
+  const savedDecisions = aiResult.value?.teacher_review?.decisions || {}
+  for (const annotation of aiResult.value?.annotations || []) {
+    annotationDecisions[annotation.id] = ['accepted', 'rejected'].includes(savedDecisions[annotation.id])
+      ? savedDecisions[annotation.id]
+      : 'pending'
+  }
+}
+
+const resetAnnotationDecisions = () => {
+  Object.keys(annotationDecisions).forEach(key => delete annotationDecisions[key])
+}
+
+const setAnnotationDecision = (annotationId, decision) => {
+  annotationDecisions[annotationId] =
+    annotationDecisions[annotationId] === decision ? 'pending' : decision
+}
+
+const applyReviewedResult = () => {
+  if (pendingAnnotationCount.value > 0) {
+    showToast(`Please review ${pendingAnnotationCount.value} remaining AI judgments`, 'error')
+    return
+  }
+
+  gradingForm.score = Number(reviewedScore.value)
+  gradingForm.feedback = buildReviewedFeedback()
+}
+
+const buildReviewedFeedback = () => {
+  const acceptedIssues = (aiResult.value?.annotations || []).filter(annotation => {
+    return annotationDecisions[annotation.id] === 'accepted'
+      && ['incorrect', 'partial'].includes(annotation.verdict)
+  })
+
+  if (!acceptedIssues.length) {
+    return aiResult.value?.feedback || ''
+  }
+
+  const issueLines = acceptedIssues.map(annotation => {
+    const location = annotation.line_start
+      ? `${annotation.file_name}, line ${annotation.line_start}`
+      : annotation.file_name
+    const correction = annotation.correction ? ` Correction: ${annotation.correction}` : ''
+    return `- ${location}: ${annotation.explanation}${correction}`
+  })
+
+  return [
+    aiResult.value?.feedback || '',
+    'Teacher-confirmed issues:',
+    ...issueLines,
+  ].filter(Boolean).join('\n')
+}
+
+const annotationVerdictLabel = (verdict) => {
+  const labels = {
+    correct: 'Correct',
+    incorrect: 'Incorrect',
+    partial: 'Partially correct',
+    unclear: 'Needs teacher review',
+  }
+  return labels[verdict] || verdict
+}
+
+const annotationBadgeClass = (verdict) => {
+  const classes = {
+    correct: 'bg-green-100 text-green-700',
+    incorrect: 'bg-red-100 text-red-700',
+    partial: 'bg-yellow-100 text-yellow-700',
+    unclear: 'bg-gray-100 text-gray-700',
+  }
+  return classes[verdict] || classes.unclear
+}
+
+const annotationCardClass = (annotation) => {
+  const decision = annotationDecisions[annotation.id]
+  if (decision === 'accepted') return 'border-green-300 bg-green-50/60'
+  if (decision === 'rejected') return 'border-red-300 bg-red-50/60 opacity-70'
+
+  const classes = {
+    correct: 'border-green-200 bg-green-50/30',
+    incorrect: 'border-red-200 bg-red-50/30',
+    partial: 'border-yellow-200 bg-yellow-50/30',
+    unclear: 'border-gray-200 bg-gray-50',
+  }
+  return classes[annotation.verdict] || classes.unclear
+}
+
+const submissionFileUrl = (fileName) => {
+  const attachment = selectedSubmission.value?.attachments?.find(att => att.file_name === fileName)
+  return attachment ? getFileUrl(attachment.file_path) : ''
 }
 
 const showToast = (message, type = 'success') => {
