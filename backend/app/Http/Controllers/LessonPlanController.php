@@ -126,11 +126,21 @@ class LessonPlanController extends Controller
   {
     $request->validate([
       'text' => 'required|string|max:5000',
+      'text_before_cursor' => 'nullable|string|max:3000',
+      'text_after_cursor' => 'nullable|string|max:2000',
+      'current_section' => 'nullable|string|max:255',
+      'next_section' => 'nullable|string|max:255',
     ]);
 
     $result = $this->lessonPlanService->aiSuggest(
       $id,
-      $request->input('text'),
+      $request->only([
+        'text',
+        'text_before_cursor',
+        'text_after_cursor',
+        'current_section',
+        'next_section',
+      ]),
       auth()->id()
     );
 

@@ -87,10 +87,10 @@
     <!-- AI indicator -->
     <div class="ml-auto flex items-center gap-2 text-xs text-gray-400">
       <span v-if="isAiLoading" class="flex items-center gap-1 text-blue-500">
-        <i class="fas fa-spinner fa-spin"></i> AI is suggesting...
+        <i class="fas fa-spinner fa-spin"></i> AI đang gợi ý...
       </span>
       <span v-else>
-        <i class="fas fa-magic"></i> Tab to apply AI suggestion
+        <i class="fas fa-magic"></i> Nhấn Tab để dùng gợi ý AI
       </span>
     </div>
   </div>

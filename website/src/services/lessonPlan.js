@@ -10,7 +10,9 @@ export default ($axios) => ({
     return $axios.$get(`/teacher/lesson-plans/${id}`)
   },
   update(id, data) {
-    return $axios.$put(`/teacher/lesson-plans/${id}`, data)
+    return $axios.$put(`/teacher/lesson-plans/${id}`, data, {
+      timeout: 30000,
+    })
   },
   delete(id) {
     return $axios.$delete(`/teacher/lesson-plans/${id}`)
@@ -32,9 +34,10 @@ export default ($axios) => ({
   },
 
   // AI autocomplete
-  aiSuggest(id, text) {
-    return $axios.$post(`/teacher/lesson-plans/${id}/ai-suggest`, { text }, {
-      timeout: 20000,
+  aiSuggest(id, context, config = {}) {
+    return $axios.$post(`/teacher/lesson-plans/${id}/ai-suggest`, context, {
+      timeout: 45000,
+      signal: config.signal,
     })
   },
 })

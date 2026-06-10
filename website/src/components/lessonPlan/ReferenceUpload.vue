@@ -1,10 +1,10 @@
 <template>
   <div class="bg-white border border-gray-200 rounded-lg p-4">
     <h3 class="text-sm font-semibold text-gray-700 mb-3">
-      <i class="fas fa-file-upload mr-1"></i> Tai lieu tham khao
+      <i class="fas fa-file-upload mr-1"></i> Tài liệu tham khảo
     </h3>
     <p class="text-xs text-gray-500 mb-3">
-      Upload tai lieu de AI co ngu canh goi y noi dung chinh xac hon.
+      Tải tài liệu lên để AI có ngữ cảnh gợi ý nội dung chính xác hơn.
     </p>
 
     <div
@@ -25,13 +25,13 @@
         @change="handleFileSelect"
       />
       <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
-      <p class="text-sm text-gray-500">Keo tha file hoac click de chon</p>
-      <p class="text-xs text-gray-400 mt-1">PDF, DOCX, TXT (toi da 20MB)</p>
+      <p class="text-sm text-gray-500">Kéo thả file hoặc bấm để chọn</p>
+      <p class="text-xs text-gray-400 mt-1">PDF, DOCX, TXT (tối đa 20MB)</p>
     </div>
 
     <div v-if="isUploading" class="mt-3 flex items-center gap-2 text-sm text-blue-600">
       <i class="fas fa-spinner fa-spin"></i>
-      <span>Dang xu ly tai lieu...</span>
+      <span>Đang xử lý tài liệu...</span>
     </div>
 
     <div v-if="uploadResult" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -40,7 +40,7 @@
         <span>{{ uploadResult.message }}</span>
       </div>
       <p v-if="uploadResult.chunks_count" class="text-xs text-green-600 mt-1">
-        Da phan tich thanh {{ uploadResult.chunks_count }} doan van ban
+        Đã phân tích thành {{ uploadResult.chunks_count }} đoạn văn bản
       </p>
     </div>
 
@@ -57,13 +57,13 @@
         @click="showTextInput = !showTextInput"
       >
         <i :class="showTextInput ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="text-xs"></i>
-        Hoac nhap noi dung tham khao truc tiep
+        Hoặc nhập nội dung tham khảo trực tiếp
       </button>
       <div v-if="showTextInput" class="mt-2">
         <textarea
           v-model="referenceText"
           rows="5"
-          placeholder="Dan noi dung tai lieu tham khao vao day..."
+          placeholder="Dán nội dung tài liệu tham khảo vào đây..."
           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"
         ></textarea>
         <button
@@ -71,7 +71,7 @@
           :disabled="!referenceText.trim() || isUploading"
           @click="submitText"
         >
-          <i class="fas fa-paper-plane mr-1"></i> Gui phan tich
+          <i class="fas fa-paper-plane mr-1"></i> Gửi phân tích
         </button>
       </div>
     </div>
@@ -108,7 +108,7 @@ function handleFileSelect(event) {
 async function uploadFile(file) {
   const maxSize = 20 * 1024 * 1024
   if (file.size > maxSize) {
-    uploadError.value = 'File qua lon. Toi da 20MB.'
+    uploadError.value = 'File quá lớn. Kích thước tối đa là 20MB.'
     return
   }
 
@@ -119,7 +119,7 @@ async function uploadFile(file) {
   ]
 
   if (!allowedTypes.includes(file.type)) {
-    uploadError.value = 'Dinh dang khong ho tro. Chi chap nhan PDF, DOCX, TXT.'
+    uploadError.value = 'Định dạng không hỗ trợ. Chỉ chấp nhận PDF, DOCX, TXT.'
     return
   }
 
@@ -133,8 +133,8 @@ async function uploadFile(file) {
   } catch (err) {
     uploadError.value =
       err?.code === 'ECONNABORTED'
-        ? 'Xu ly tai lieu qua lau. Hay thu lai voi file nhe hon hoac doi lau hon.'
-        : err?.response?.data?.message || 'Loi khi upload tai lieu'
+        ? 'Xử lý tài liệu quá lâu. Hãy thử lại với file nhỏ hơn.'
+        : err?.response?.data?.message || 'Có lỗi khi tải tài liệu lên'
   } finally {
     isUploading.value = false
   }
@@ -153,7 +153,7 @@ async function submitText() {
     referenceText.value = ''
     showTextInput.value = false
   } catch (err) {
-    uploadError.value = err?.response?.data?.message || 'Loi khi xu ly noi dung'
+    uploadError.value = err?.response?.data?.message || 'Có lỗi khi xử lý nội dung'
   } finally {
     isUploading.value = false
   }

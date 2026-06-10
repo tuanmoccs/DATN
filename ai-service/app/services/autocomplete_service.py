@@ -17,13 +17,16 @@ MAX_CONTEXT_LENGTH = 1500
 
 async def generate_autocomplete(request: AutocompleteRequest) -> AutocompleteResponse:
     """Generate autocomplete suggestion using RAG + LLM."""
-    text = request.text.strip()
+    text_before_cursor = (request.text_before_cursor or request.text).strip()
+    text_after_cursor = request.text_after_cursor.strip()
 
-    if not text:
+    if not text_before_cursor:
         return AutocompleteResponse(suggestion="")
 
-    # Take the tail of the text as the query for vector search
-    query_text = text[-QUERY_TAIL_LENGTH:]
+    query_text = " ".join(filter(None, [
+        request.current_section,
+        text_before_cursor[-QUERY_TAIL_LENGTH:],
+    ]))
 
     # Retrieve RAG context if lesson_id is provided
     rag_context = ""
@@ -34,10 +37,10 @@ async def generate_autocomplete(request: AutocompleteRequest) -> AutocompleteRes
             top_k=3,
         )
 
-    # Limit current text sent to LLM to avoid token waste
-    current_text = text[-MAX_CONTEXT_LENGTH:]
+    current_text = text_before_cursor[-MAX_CONTEXT_LENGTH:]
+    following_text = text_after_cursor[:1000]
 
-    llm = get_llm()
+    llm = get_llm().bind(max_tokens=120)
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", AUTOCOMPLETE_SYSTEM_PROMPT),
@@ -48,7 +51,10 @@ async def generate_autocomplete(request: AutocompleteRequest) -> AutocompleteRes
 
     response = await chain.ainvoke({
         "context": rag_context or "Không có tài liệu tham khảo.",
-        "current_text": current_text,
+        "text_before_cursor": current_text,
+        "text_after_cursor": following_text or "Không có nội dung phía sau con trỏ.",
+        "current_section": request.current_section or "Không xác định",
+        "next_section": request.next_section or "Không có mục tiếp theo",
     })
 
     suggestion = response.content.strip()

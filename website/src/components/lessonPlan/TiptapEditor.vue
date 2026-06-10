@@ -12,6 +12,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
+import { Extension } from '@tiptap/core'
 import EditorToolbar from './EditorToolbar.vue'
 import { GhostText, ghostTextPluginKey } from './ghostTextPlugin'
 
@@ -19,7 +20,7 @@ const props = defineProps({
   modelValue: { type: String, default: '' },
   placeholder: { type: String, default: 'Bắt đầu soạn giáo án...' },
   aiSuggestFn: { type: Function, default: null },
-  debounceMs: { type: Number, default: 1200 },
+  debounceMs: { type: Number, default: 1800 },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -29,16 +30,59 @@ let debounceTimer = null
 let abortController = null
 let suppressUpdate = false
 
+const TemplatePlaceholder = Extension.create({
+  name: 'templatePlaceholder',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph'],
+        attributes: {
+          templatePlaceholder: {
+            default: null,
+            parseHTML: element => element.getAttribute('data-placeholder'),
+            renderHTML: attributes => (
+              attributes.templatePlaceholder
+                ? { 'data-placeholder': attributes.templatePlaceholder }
+                : {}
+            ),
+          },
+        },
+      },
+    ]
+  },
+})
+
 const editor = useEditor({
   content: props.modelValue,
   extensions: [
     StarterKit,
     Underline,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    Placeholder.configure({ placeholder: props.placeholder }),
+    TemplatePlaceholder,
+    Placeholder.configure({
+      placeholder: ({ node, editor: currentEditor }) =>
+        node.attrs.templatePlaceholder || (currentEditor.isEmpty ? props.placeholder : ''),
+      showOnlyCurrent: false,
+      includeChildren: true,
+    }),
     GhostText,
   ],
   editorProps: {
+    handleClick(view, pos, event) {
+      const prompt = event.target.closest?.('em')
+      if (!prompt) return false
+
+      const promptText = prompt.textContent?.trim() || ''
+      const isTemplatePrompt = /^(Nhập|Mô tả|Liệt kê|Ghi lại|Nêu|Ví dụ)/.test(promptText)
+      if (!isTemplatePrompt) return false
+
+      const selection = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(prompt)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      return false
+    },
     handleKeyDown(view, event) {
       const pluginState = ghostTextPluginKey.getState(view.state)
 
@@ -101,50 +145,86 @@ function scheduleSuggestion(ed) {
     return
   }
 
-  const text = ed.getText()
-  console.log('[AI] scheduleSuggestion, text length:', text.trim().length)
-  if (text.trim().length < 5) return // Too short to suggest
+  const context = buildCursorContext(ed)
+  if (context.text_before_cursor.trim().length < 5) return
 
-  console.log('[AI] Starting debounce timer:', props.debounceMs, 'ms')
   debounceTimer = setTimeout(async () => {
-    console.log('[AI] Debounce fired, calling fetchSuggestion')
-    await fetchSuggestion(ed, text)
+    await fetchSuggestion(ed, context)
   }, props.debounceMs)
 }
 
-async function fetchSuggestion(ed, text) {
-  abortController = new AbortController()
+function buildCursorContext(ed) {
+  const cursorPosition = ed.state.selection.from
+  const documentEnd = ed.state.doc.content.size
+  const textBeforeCursor = ed.state.doc.textBetween(
+    Math.max(0, cursorPosition - 1500),
+    cursorPosition,
+    '\n',
+  )
+  const textAfterCursor = ed.state.doc.textBetween(
+    cursorPosition,
+    Math.min(documentEnd, cursorPosition + 1000),
+    '\n',
+  )
+
+  let currentSection = ''
+  let nextSection = ''
+
+  ed.state.doc.descendants((node, pos) => {
+    if (node.type.name !== 'heading' || ![2, 3].includes(node.attrs.level)) return
+
+    const title = node.textContent.trim()
+    if (pos < cursorPosition) {
+      currentSection = title
+    } else if (!nextSection) {
+      nextSection = title
+    }
+  })
+
+  return {
+    text: textBeforeCursor,
+    text_before_cursor: textBeforeCursor,
+    text_after_cursor: textAfterCursor,
+    current_section: currentSection,
+    next_section: nextSection,
+    cursor_position: cursorPosition,
+  }
+}
+
+async function fetchSuggestion(ed, context) {
+  const controller = new AbortController()
+  abortController = controller
   isAiLoading.value = true
 
   try {
-    console.log('[AI] Calling aiSuggestFn...')
-    const result = await props.aiSuggestFn(text)
-    console.log('[AI] Got result:', result)
+    const result = await props.aiSuggestFn(context, {
+      signal: controller.signal,
+    })
     const suggestion = result?.suggestion?.trim()
 
-    if (!suggestion) {
-      console.log('[AI] Empty suggestion, skipping')
-      return
-    }
-    if (!ed.isFocused) {
-      console.log('[AI] Editor not focused, skipping')
-      return
-    }
+    const cursorUnchanged = ed.state.selection.from === context.cursor_position
+    if (!suggestion || !ed.isFocused || controller.signal.aborted || !cursorUnchanged) return
 
-    // Get current cursor position
-    const { from } = ed.state.selection
-    console.log('[AI] Dispatching ghost text at pos:', from, 'suggestion:', suggestion.substring(0, 50) + '...')
     const tr = ed.view.state.tr.setMeta(ghostTextPluginKey, {
       suggestion,
-      pos: from,
+      pos: context.cursor_position,
     })
     ed.view.dispatch(tr)
   } catch (err) {
-    if (err?.name !== 'AbortError') {
+    const isCanceled = (
+      err?.name === 'AbortError'
+      || err?.name === 'CanceledError'
+      || err?.code === 'ERR_CANCELED'
+    )
+    const isTimeout = err?.code === 'ECONNABORTED'
+
+    if (!isCanceled && !isTimeout) {
       console.warn('AI suggest failed:', err)
     }
   } finally {
-    isAiLoading.value = false
+    if (abortController === controller) {
+      isAiLoading.value = false
+    }
   }
 }
 
@@ -173,12 +253,20 @@ onBeforeUnmount(() => {
   line-height: 1.75;
 }
 
-.editor-content .tiptap p.is-editor-empty:first-child::before {
+@media (max-width: 640px) {
+  .editor-content .tiptap {
+    min-height: 420px;
+    padding: 1rem;
+  }
+}
+
+.editor-content .tiptap p.is-empty::before {
   content: attr(data-placeholder);
   float: left;
   color: #9ca3af;
   pointer-events: none;
   height: 0;
+  font-style: italic;
 }
 
 /* Headings */

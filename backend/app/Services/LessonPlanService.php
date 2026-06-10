@@ -293,7 +293,7 @@ class LessonPlanService
   /**
    * Gọi AI autocomplete để gợi ý nội dung tiếp theo
    */
-  public function aiSuggest(int $lessonPlanId, string $text, int $teacherId): array
+  public function aiSuggest(int $lessonPlanId, array $context, int $teacherId): array
   {
     try {
       $plan = $this->lessonPlanRepository->findOrFail($lessonPlanId);
@@ -305,7 +305,7 @@ class LessonPlanService
         ];
       }
 
-      return $this->aiServiceClient->getAutocompleteSuggestion($text, $lessonPlanId);
+      return $this->aiServiceClient->getAutocompleteSuggestion($context, $lessonPlanId);
     } catch (\Exception $e) {
       Log::warning('AI suggest failed', ['error' => $e->getMessage()]);
       return ['suggestion' => ''];

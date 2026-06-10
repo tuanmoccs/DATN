@@ -20,9 +20,9 @@ class AiServiceClient
     $this->timeout = config('services.ai_service.timeout');
   }
 
-  public function invokeAgent(string $agent, array $payload): ?array
+  public function invokeAgent(string $agent, array $payload, ?int $timeout = null): ?array
   {
-    $response = Http::timeout($this->timeout)
+    $response = Http::timeout($timeout ?? $this->timeout)
       ->withHeaders($this->headers())
       ->post("{$this->baseUrl}/api/agents/execute", [
         'agent' => $agent,
@@ -331,15 +331,22 @@ class AiServiceClient
   /**
    * Gọi AI service để lấy gợi ý autocomplete cho giáo án
    */
-  public function getAutocompleteSuggestion(string $text, ?int $lessonId = null): array
+  public function getAutocompleteSuggestion(array $context, ?int $lessonId = null): array
   {
     try {
-      $payload = ['text' => $text];
+      $payload = [
+        'text' => $context['text'] ?? '',
+        'text_before_cursor' => $context['text_before_cursor'] ?? $context['text'] ?? '',
+        'text_after_cursor' => $context['text_after_cursor'] ?? '',
+        'current_section' => $context['current_section'] ?? '',
+        'next_section' => $context['next_section'] ?? '',
+      ];
       if ($lessonId) {
         $payload['lesson_id'] = $lessonId;
       }
 
-      $response = $this->invokeAgent('autocomplete', $payload);
+      // Autocomplete must fail fast so it never blocks the editor workflow.
+      $response = $this->invokeAgent('autocomplete', $payload, 35);
 
       if (!$response) {
         Log::warning('AI Service: autocomplete suggestion failed');
