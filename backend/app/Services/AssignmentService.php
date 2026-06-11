@@ -354,13 +354,6 @@ class AssignmentService
 
       DB::commit();
 
-      // Tự động gọi AI chấm điểm bằng background job sau khi gửi response
-      try {
-        \App\Jobs\GradeSubmissionJob::dispatch($submission->id)->afterResponse();
-      } catch (\Exception $e) {
-        Log::warning('AI auto-grading job dispatch failed', ['submission_id' => $submission->id, 'error' => $e->getMessage()]);
-      }
-
       $submission->load(['attachments', 'grading']);
 
       return [
@@ -480,7 +473,7 @@ class AssignmentService
         'max_score' => $assignment->max_score,
       ]);
 
-      if ($grading->exists && $grading->ai_status === 'processing') {
+      if ($grading->exists && in_array($grading->ai_status, ['pending', 'processing'], true)) {
         return [
           'status' => 202,
           'data' => [
@@ -491,7 +484,7 @@ class AssignmentService
         ];
       }
 
-      $grading->ai_status = 'processing';
+      $grading->ai_status = 'pending';
       $grading->save();
 
       \App\Jobs\GradeSubmissionJob::dispatch($submission->id);

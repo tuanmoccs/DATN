@@ -79,6 +79,25 @@
       </div>
 
       <!-- Tabs: Submissions -->
+      <div v-if="processingSubmissionCount > 0"
+        class="mb-4 rounded-xl border border-purple-200 bg-purple-50 p-4">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-robot animate-pulse text-xl text-purple-600"></i>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-purple-800">
+              AI is grading {{ processingSubmissionCount }} submission{{ processingSubmissionCount > 1 ? 's' : '' }}
+            </p>
+            <p class="text-xs text-purple-600">
+              You can leave this page. Progress is stored on the server and will resume when you return.
+            </p>
+          </div>
+          <i class="fas fa-spinner fa-spin text-purple-600"></i>
+        </div>
+        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-purple-100">
+          <div class="h-full w-1/3 animate-pulse rounded-full bg-purple-600"></div>
+        </div>
+      </div>
+
       <div class="bg-white rounded-xl border">
         <div class="border-b px-5 py-3">
           <h3 class="font-semibold text-gray-800">
@@ -110,6 +129,22 @@
                 <span :class="submissionStatusClass(submission.status)"
                   class="px-2.5 py-1 rounded-full text-xs font-medium">
                   {{ submissionStatusLabel(submission.status) }}
+                </span>
+                <span v-if="submission.grading?.ai_status === 'pending'"
+                  class="px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                  <i class="fas fa-clock mr-1"></i>AI queued
+                </span>
+                <span v-else-if="submission.grading?.ai_status === 'processing'"
+                  class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                  <i class="fas fa-spinner fa-spin mr-1"></i>AI grading
+                </span>
+                <span v-else-if="submission.grading?.ai_status === 'failed'"
+                  class="px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-xs font-medium">
+                  <i class="fas fa-exclamation-circle mr-1"></i>AI failed
+                </span>
+                <span v-else-if="submission.grading?.ai_status === 'completed'"
+                  class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                  <i class="fas fa-check mr-1"></i>AI ready
                 </span>
                 <div v-if="submission.grading" class="text-right">
                   <div class="font-bold text-gray-800">{{ submission.grading.score }}/{{ submission.grading.max_score }}
@@ -178,10 +213,10 @@
                 <h4 class="font-medium text-gray-800">
                   <i class="fas fa-robot text-purple-500 mr-2"></i>AI Suggested Grading
                 </h4>
-                <button @click="requestAIGrade(selectedSubmission.id)" :disabled="aiGrading"
+                <button @click="requestAIGrade(selectedSubmission.id)" :disabled="selectedSubmissionAIProcessing"
                   class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:bg-gray-400 font-medium">
-                  <i :class="aiGrading ? 'fas fa-spinner fa-spin' : 'fas fa-magic'" class="mr-1"></i>
-                  {{ aiGrading ? 'Processing in background...' : 'Require AI grading' }}
+                  <i :class="selectedSubmissionAIProcessing ? 'fas fa-spinner fa-spin' : 'fas fa-magic'" class="mr-1"></i>
+                  {{ selectedSubmissionAIProcessing ? 'Processing this submission...' : 'Require AI grading' }}
                 </button>
               </div>
 
@@ -365,6 +400,13 @@
                       <li v-for="s in aiResult.suggestions" :key="s">• {{ s }}</li>
                     </ul>
                   </div>
+                </div>
+              </template>
+
+              <template v-else-if="selectedSubmission.grading?.ai_status === 'pending'">
+                <div class="text-center py-4 text-yellow-600">
+                  <i class="fas fa-clock text-2xl mb-2"></i>
+                  <p class="text-sm">AI grading is queued and waiting for the grading worker...</p>
                 </div>
               </template>
 
@@ -599,7 +641,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/plugins/api'
 
@@ -614,14 +656,13 @@ const assignment = ref(null)
 const loading = ref(true)
 const updating = ref(false)
 const grading = ref(false)
-const aiGrading = ref(false)
 const showSubmissionModal = ref(false)
 const showEditModal = ref(false)
 const selectedSubmission = ref(null)
 const aiResult = ref(null)
 const annotationDecisions = reactive({})
 const toast = reactive({ show: false, message: '', type: 'success' })
-let aiPollingToken = 0
+const assignmentPollingTimer = ref(null)
 
 // Edit form
 const editForm = reactive({
@@ -639,6 +680,16 @@ const gradingForm = reactive({ score: 0, feedback: '' })
 // Computed
 const gradedCount = computed(() => {
   return assignment.value?.submissions?.filter(s => s.status === 'graded').length || 0
+})
+
+const processingSubmissionCount = computed(() => {
+  return assignment.value?.submissions?.filter(
+    submission => ['pending', 'processing'].includes(submission.grading?.ai_status)
+  ).length || 0
+})
+
+const selectedSubmissionAIProcessing = computed(() => {
+  return ['pending', 'processing'].includes(selectedSubmission.value?.grading?.ai_status)
 })
 
 const isOverdue = computed(() => {
@@ -686,9 +737,6 @@ const reviewedScore = computed(() => {
   return Math.min(maxScore, Math.max(0, adjustedScore)).toFixed(2)
 })
 
-// Mount
-onMounted(() => fetchAssignment())
-
 // Fetch assignment
 const fetchAssignment = async () => {
   loading.value = true
@@ -696,6 +744,8 @@ const fetchAssignment = async () => {
     const res = await api.assignment.getAssignmentDetail(props.id || route.params.id)
     assignment.value = res.data
     populateEditForm()
+    syncSelectedSubmissionFromAssignment()
+    syncAssignmentPolling()
   } catch (e) {
     showToast('Error loading assignment', 'error')
   } finally {
@@ -830,52 +880,101 @@ const openSubmissionDetail = async (submission) => {
 
 // Request AI grading
 const requestAIGrade = async (submissionId) => {
-  const pollingToken = ++aiPollingToken
-  aiGrading.value = true
   aiResult.value = null
   try {
     await api.assignment.requestAIGrading(submissionId)
+    markSubmissionAIStatus(submissionId, 'pending')
     showToast('AI grading started in background')
-    await pollAIGrading(submissionId, pollingToken)
+    startAssignmentPolling()
   } catch (e) {
     showToast(e.response?.data?.message || e.message || 'AI grading failed', 'error')
-  } finally {
-    if (pollingToken === aiPollingToken) {
-      aiGrading.value = false
+  }
+}
+
+const startAssignmentPolling = () => {
+  if (assignmentPollingTimer.value) return
+  assignmentPollingTimer.value = setInterval(refreshAssignmentProgress, 3000)
+}
+
+const stopAssignmentPolling = () => {
+  if (!assignmentPollingTimer.value) return
+  clearInterval(assignmentPollingTimer.value)
+  assignmentPollingTimer.value = null
+}
+
+const syncAssignmentPolling = () => {
+  if (processingSubmissionCount.value > 0) {
+    startAssignmentPolling()
+  } else {
+    stopAssignmentPolling()
+  }
+}
+
+const refreshAssignmentProgress = async () => {
+  try {
+    const previousStatuses = new Map(
+      (assignment.value?.submissions || []).map(submission => [
+        submission.id,
+        submission.grading?.ai_status,
+      ])
+    )
+    const res = await api.assignment.getAssignmentDetail(props.id || route.params.id)
+    assignment.value = res.data
+    syncSelectedSubmissionFromAssignment()
+
+    const completedSubmission = assignment.value?.submissions?.find(submission => {
+      return ['pending', 'processing'].includes(previousStatuses.get(submission.id))
+        && submission.grading?.ai_status === 'completed'
+    })
+    const failedSubmission = assignment.value?.submissions?.find(submission => {
+      return ['pending', 'processing'].includes(previousStatuses.get(submission.id))
+        && submission.grading?.ai_status === 'failed'
+    })
+
+    if (completedSubmission) showToast('AI grading completed')
+    if (failedSubmission) showToast('AI grading failed for a submission', 'error')
+    syncAssignmentPolling()
+  } catch (e) {
+    // Keep polling. A temporary network error must not erase server-side progress.
+  }
+}
+
+const syncSelectedSubmissionFromAssignment = () => {
+  if (!selectedSubmission.value || !assignment.value?.submissions) return
+
+  const freshSubmission = assignment.value.submissions.find(
+    submission => submission.id === selectedSubmission.value.id
+  )
+  if (!freshSubmission) return
+
+  const previousStatus = selectedSubmission.value.grading?.ai_status
+  selectedSubmission.value = freshSubmission
+
+  if (
+    previousStatus !== 'completed'
+    && freshSubmission.grading?.ai_status === 'completed'
+    && freshSubmission.grading.ai_feedback
+  ) {
+    try {
+      aiResult.value = JSON.parse(freshSubmission.grading.ai_feedback)
+      initializeAnnotationDecisions()
+    } catch (e) {
+      aiResult.value = null
     }
   }
 }
 
-const pollAIGrading = async (submissionId, pollingToken) => {
-  const maxAttempts = 200
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    if (pollingToken !== aiPollingToken) return
-
-    const res = await api.assignment.getSubmissionDetail(submissionId)
-    const submission = res.data
-    const gradingStatus = submission.grading?.ai_status
-    selectedSubmission.value = submission
-
-    if (gradingStatus === 'completed') {
-      if (!submission.grading?.ai_feedback) {
-        throw new Error('AI grading completed without feedback')
-      }
-
-      aiResult.value = JSON.parse(submission.grading.ai_feedback)
-      initializeAnnotationDecisions()
-      showToast('AI grading completed')
-      await fetchAssignment()
-      return
-    }
-
-    if (gradingStatus === 'failed') {
-      throw new Error('AI grading failed while processing the submission')
+const markSubmissionAIStatus = (submissionId, status) => {
+  const submission = assignment.value?.submissions?.find(item => item.id === submissionId)
+  if (submission) {
+    submission.grading = { ...(submission.grading || {}), ai_status: status }
+  }
+  if (selectedSubmission.value?.id === submissionId) {
+    selectedSubmission.value.grading = {
+      ...(selectedSubmission.value.grading || {}),
+      ai_status: status,
     }
   }
-
-  throw new Error('AI grading is taking too long. The background job may still be running.')
 }
 
 // Submit final grading
@@ -1092,4 +1191,13 @@ const showToast = (message, type = 'success') => {
   toast.type = type
   setTimeout(() => { toast.show = false }, 3000)
 }
+
+onMounted(async () => {
+  await fetchAssignment()
+  syncAssignmentPolling()
+})
+
+onUnmounted(() => {
+  stopAssignmentPolling()
+})
 </script>

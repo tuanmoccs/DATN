@@ -46,9 +46,7 @@ export default ($axios) => ({
 
   // Yêu cầu AI chấm điểm
   requestAIGrading(submissionId) {
-    return $axios.$post(`/teacher/assignments/submissions/${submissionId}/ai-grade`, {}, {
-      timeout: 120000, // 2 min cho AI processing
-    })
+    return $axios.$post(`/teacher/assignments/submissions/${submissionId}/ai-grade`, {})
   },
 
   // Giáo viên chốt điểm
