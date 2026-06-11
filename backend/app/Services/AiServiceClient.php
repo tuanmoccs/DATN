@@ -121,7 +121,7 @@ class AiServiceClient
    */
   public function gradeAssignmentSubmission(array $assignment, iterable $attachments, iterable $referenceFiles = []): array
   {
-    $request = Http::timeout($this->timeout)
+    $request = Http::timeout((int) config('services.ai_service.grading_timeout', 600))
       ->withHeaders($this->headers());
 
     foreach ($referenceFiles as $file) {

@@ -34,6 +34,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-ServBay.dev}
       - QUEUE_CONNECTION=database
       - AI_SERVICE_URL=http://ai-service:8001
+      - AI_GRADING_TIMEOUT=600
     volumes:
       - ./backend:/var/www
       - /var/www/vendor
@@ -50,7 +51,7 @@ services:
       dockerfile: Dockerfile
     container_name: datn-queue-worker
     restart: always
-    command: php artisan queue:work --verbose --tries=3 --timeout=120
+    command: php artisan queue:work --queue=default --verbose --tries=3 --timeout=120
     environment:
       - APP_ENV=production
       - APP_DEBUG=false
@@ -70,7 +71,36 @@ services:
     networks:
       - datn-network
 
-  # 4. Python AI Service (FastAPI + ChromaDB RAG)
+  # 4. Dedicated worker for long-running assignment image grading jobs
+  ai-grading-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datn-ai-grading-worker
+    restart: always
+    command: php artisan queue:work --queue=ai-grading --verbose --tries=1 --timeout=900
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-DATNAITECH}
+      - DB_USERNAME=root
+      - DB_PASSWORD=${DB_PASSWORD:-ServBay.dev}
+      - QUEUE_CONNECTION=database
+      - AI_SERVICE_URL=http://ai-service:8001
+      - AI_GRADING_TIMEOUT=600
+    volumes:
+      - ./backend:/var/www
+      - /var/www/vendor
+    depends_on:
+      - db
+      - backend
+      - ai-service
+    networks:
+      - datn-network
+
+  # 5. Python AI Service (FastAPI + ChromaDB RAG)
   ai-service:
     build:
       context: ./ai-service
@@ -89,19 +119,20 @@ services:
     networks:
       - datn-network
 
-  # 5. Teacher Website (Vue Frontend)
+  # 6. Teacher Website (Vue Frontend)
   frontend:
     build:
       context: ./website
       dockerfile: Dockerfile
       args:
-        - VITE_API_ENDPOINT=https://doantnta.site/api
+        - VITE_API_ENDPOINT=${VITE_API_ENDPOINT:-https://doantnta.site/api}
+        - VITE_STORAGE_ENDPOINT=${VITE_STORAGE_ENDPOINT:-https://doantnta.site/storage}
     container_name: datn-frontend
     restart: always
     networks:
       - datn-network
 
-  # 6. Main Nginx Gateway Proxy
+  # 7. Main Nginx Gateway Proxy
   nginx:
     image: nginx:stable-alpine
     container_name: datn-nginx-gateway

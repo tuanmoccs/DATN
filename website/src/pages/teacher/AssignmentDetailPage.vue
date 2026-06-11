@@ -181,7 +181,7 @@
                 <button @click="requestAIGrade(selectedSubmission.id)" :disabled="aiGrading"
                   class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:bg-gray-400 font-medium">
                   <i :class="aiGrading ? 'fas fa-spinner fa-spin' : 'fas fa-magic'" class="mr-1"></i>
-                  {{ aiGrading ? 'Processing...' : 'Require AI grading' }}
+                  {{ aiGrading ? 'Processing in background...' : 'Require AI grading' }}
                 </button>
               </div>
 
@@ -621,6 +621,7 @@ const selectedSubmission = ref(null)
 const aiResult = ref(null)
 const annotationDecisions = reactive({})
 const toast = reactive({ show: false, message: '', type: 'success' })
+let aiPollingToken = 0
 
 // Edit form
 const editForm = reactive({
@@ -829,28 +830,52 @@ const openSubmissionDetail = async (submission) => {
 
 // Request AI grading
 const requestAIGrade = async (submissionId) => {
+  const pollingToken = ++aiPollingToken
   aiGrading.value = true
+  aiResult.value = null
   try {
-    const res = await api.assignment.requestAIGrading(submissionId)
-    if (res.data?.ai_feedback) {
-      try {
-        aiResult.value = JSON.parse(res.data.ai_feedback)
-      } catch {
-        aiResult.value = res.data
-      }
-    } else {
-      aiResult.value = res.data
-    }
-    initializeAnnotationDecisions()
-    showToast('AI grading completed')
-
-    // Refresh assignment data
-    fetchAssignment()
+    await api.assignment.requestAIGrading(submissionId)
+    showToast('AI grading started in background')
+    await pollAIGrading(submissionId, pollingToken)
   } catch (e) {
-    showToast(e.response?.data?.message || 'AI grading failed', 'error')
+    showToast(e.response?.data?.message || e.message || 'AI grading failed', 'error')
   } finally {
-    aiGrading.value = false
+    if (pollingToken === aiPollingToken) {
+      aiGrading.value = false
+    }
   }
+}
+
+const pollAIGrading = async (submissionId, pollingToken) => {
+  const maxAttempts = 200
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    await new Promise(resolve => setTimeout(resolve, 3000))
+    if (pollingToken !== aiPollingToken) return
+
+    const res = await api.assignment.getSubmissionDetail(submissionId)
+    const submission = res.data
+    const gradingStatus = submission.grading?.ai_status
+    selectedSubmission.value = submission
+
+    if (gradingStatus === 'completed') {
+      if (!submission.grading?.ai_feedback) {
+        throw new Error('AI grading completed without feedback')
+      }
+
+      aiResult.value = JSON.parse(submission.grading.ai_feedback)
+      initializeAnnotationDecisions()
+      showToast('AI grading completed')
+      await fetchAssignment()
+      return
+    }
+
+    if (gradingStatus === 'failed') {
+      throw new Error('AI grading failed while processing the submission')
+    }
+  }
+
+  throw new Error('AI grading is taking too long. The background job may still be running.')
 }
 
 // Submit final grading

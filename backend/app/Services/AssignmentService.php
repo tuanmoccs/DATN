@@ -475,14 +475,33 @@ class AssignmentService
         }
       }
 
-      $result = $this->performAIGrading($submission);
+      $grading = $submission->grading ?? new Grading([
+        'submission_id' => $submission->id,
+        'max_score' => $assignment->max_score,
+      ]);
+
+      if ($grading->exists && $grading->ai_status === 'processing') {
+        return [
+          'status' => 202,
+          'data' => [
+            'success' => true,
+            'message' => 'AI is already grading this submission',
+            'data' => $grading,
+          ],
+        ];
+      }
+
+      $grading->ai_status = 'processing';
+      $grading->save();
+
+      \App\Jobs\GradeSubmissionJob::dispatch($submission->id);
 
       return [
-        'status' => 200,
+        'status' => 202,
         'data' => [
           'success' => true,
-          'message' => 'AI đã chấm điểm xong',
-          'data' => $result,
+          'message' => 'AI grading has been queued',
+          'data' => $grading->fresh(),
         ],
       ];
     } catch (\Exception $e) {

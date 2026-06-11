@@ -35,6 +35,7 @@ return [
         'url' => env('AI_SERVICE_URL', 'http://localhost:8001'),
         'secret' => env('RAG_API_SECRET', ''),
         'timeout' => (int) env('AI_SERVICE_TIMEOUT', 120),
+        'grading_timeout' => (int) env('AI_GRADING_TIMEOUT', 600),
     ],
 
 ];

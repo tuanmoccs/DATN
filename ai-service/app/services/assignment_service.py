@@ -1,10 +1,13 @@
+import asyncio
 import base64
+import io
 import json
 import logging
 import re
 
 from fastapi import UploadFile
 from langchain_core.messages import HumanMessage, SystemMessage
+from PIL import Image, ImageOps
 
 from app.core.dependencies import get_llm
 from app.schemas.assignment import (
@@ -16,6 +19,9 @@ from app.schemas.assignment import (
 from app.services.document_processor import extract_text_from_bytes_with_fallback
 
 logger = logging.getLogger(__name__)
+ASSIGNMENT_IMAGE_OCR_CONCURRENCY = 3
+ASSIGNMENT_IMAGE_MAX_DIMENSION = 2048
+ASSIGNMENT_IMAGE_JPEG_QUALITY = 85
 
 ASSIGNMENT_GRADING_SYSTEM_PROMPT = (
     "You are an experienced and fair teacher who grades student assignments. "
@@ -194,34 +200,48 @@ async def grade_assignment(request: AssignmentGradeRequest, student_images: list
 
 
 async def extract_submission_data(files: list[UploadFile]) -> tuple[str, list[str]]:
-    content_parts: list[str] = []
-    images: list[str] = []
-
-    for file_index, file in enumerate(files, start=1):
-        filename = file.filename or "submission"
-        file_bytes = await file.read()
-
-        try:
-            content_type = _detect_content_type(filename, file.content_type or "")
-
-            if content_type == "image":
-                mime_type = _image_mime_type(filename, file.content_type or "")
-                text = await _extract_text_from_image(file_bytes, mime_type)
-                source_id = f"IMG{file_index:03d}"
-
-                # Base64 encode for vision input
-                image_data = base64.b64encode(file_bytes).decode("utf-8")
-                data_url = f"data:{mime_type};base64,{image_data}"
-                images.append(data_url)
-            else:
-                text = await extract_text_from_bytes_with_fallback(file_bytes, content_type)
-                source_id = f"DOC{file_index:03d}"
-
-            content_parts.append(_format_submission_source(source_id, filename, content_type, text))
-        except Exception as exc:
-            logger.warning("Failed to extract assignment file %s: %s", filename, exc)
+    semaphore = asyncio.Semaphore(ASSIGNMENT_IMAGE_OCR_CONCURRENCY)
+    tasks = [
+        _extract_submission_file(file_index, file, semaphore)
+        for file_index, file in enumerate(files, start=1)
+    ]
+    results = await asyncio.gather(*tasks)
+    ordered_results = sorted((result for result in results if result), key=lambda item: item[0])
+    content_parts = [result[1] for result in ordered_results]
+    images = [result[2] for result in ordered_results if result[2]]
 
     return "\n\n".join(content_parts), images
+
+
+async def _extract_submission_file(
+    file_index: int,
+    file: UploadFile,
+    semaphore: asyncio.Semaphore,
+) -> tuple[int, str, str | None] | None:
+    filename = file.filename or "submission"
+    file_bytes = await file.read()
+
+    try:
+        content_type = _detect_content_type(filename, file.content_type or "")
+
+        if content_type == "image":
+            mime_type = _image_mime_type(filename, file.content_type or "")
+            vision_bytes, vision_mime_type = _prepare_image_for_vision(file_bytes, mime_type)
+            async with semaphore:
+                text = await _extract_text_from_image(vision_bytes, vision_mime_type)
+            source_id = f"IMG{file_index:03d}"
+            image_data = base64.b64encode(vision_bytes).decode("utf-8")
+            image_url = f"data:{vision_mime_type};base64,{image_data}"
+        else:
+            text = await extract_text_from_bytes_with_fallback(file_bytes, content_type)
+            source_id = f"DOC{file_index:03d}"
+            image_url = None
+
+        content = _format_submission_source(source_id, filename, content_type, text)
+        return file_index, content, image_url
+    except Exception as exc:
+        logger.warning("Failed to extract assignment file %s: %s", filename, exc)
+        return None
 
 
 async def extract_reference_text(files: list[UploadFile]) -> str:
@@ -322,6 +342,36 @@ def _image_mime_type(filename: str, declared_mime_type: str) -> str:
         if lower_name.endswith(extension):
             return mime_type
     return "image/png"
+
+
+def _prepare_image_for_vision(file_bytes: bytes, fallback_mime_type: str) -> tuple[bytes, str]:
+    try:
+        with Image.open(io.BytesIO(file_bytes)) as original:
+            image = ImageOps.exif_transpose(original)
+            image.thumbnail(
+                (ASSIGNMENT_IMAGE_MAX_DIMENSION, ASSIGNMENT_IMAGE_MAX_DIMENSION),
+                Image.Resampling.LANCZOS,
+            )
+
+            if image.mode in {"RGBA", "LA"}:
+                background = Image.new("RGB", image.size, "white")
+                alpha = image.getchannel("A")
+                background.paste(image.convert("RGB"), mask=alpha)
+                image = background
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
+
+            output = io.BytesIO()
+            image.save(
+                output,
+                format="JPEG",
+                quality=ASSIGNMENT_IMAGE_JPEG_QUALITY,
+                optimize=True,
+            )
+            return output.getvalue(), "image/jpeg"
+    except Exception as exc:
+        logger.warning("Failed to optimize assignment image for vision: %s", exc)
+        return file_bytes, fallback_mime_type
 
 
 def _parse_json(content: str) -> dict:
