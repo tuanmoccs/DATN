@@ -21,18 +21,25 @@ jobs:
           # key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
+            set -e
             echo "==== STARTING DEPLOYMENT ===="
             cd ~/DATN
             
             # 1. Pull latest changes from Git
             git fetch origin
             git checkout ${{ github.ref_name }}
-            git pull origin ${{ github.ref_name }}
+            git pull --ff-only origin ${{ github.ref_name }}
+            echo "Deploying commit: $(git rev-parse HEAD)"
+            test "$(git rev-parse HEAD)" = "${{ github.sha }}"
             
-            # 2. Deploy and rebuild changed containers dynamically
-            docker compose up -d --build
+            # 2. Frontend must be rebuilt from the current source revision.
+            docker compose build --no-cache frontend
+
+            # 3. Deploy all services and force replacement of the frontend container.
+            docker compose up -d --build --remove-orphans
+            docker compose up -d --force-recreate frontend nginx
             
-            # 3. Optimize disk space (crucial for 1GB/20GB storage VPS)
+            # 4. Optimize disk space (crucial for 1GB/20GB storage VPS)
             docker image prune -f
             
             echo "==== DEPLOYMENT SUCCESSFUL ===="
